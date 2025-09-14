@@ -130,10 +130,8 @@ function ProfileDropdownMenu() {
       localStorage.removeItem('authToken');
       localStorage.removeItem('userData');
     }
-    // route to login page
+    // route to home
     router.push(ApplicationRoutes.HOME);
-    // setIsWalletConnected(false);
-    // setAuthError(null);
   };
 
   return (

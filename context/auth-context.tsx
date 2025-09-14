@@ -12,6 +12,8 @@ import {
 type AuthContextProps = {
   isNewFreelanceUser: boolean;
   setIsNewFreelanceUser: Dispatch<SetStateAction<boolean>>;
+  isNewClientUser: boolean;
+  setIsNewClientUser: Dispatch<SetStateAction<boolean>>;
   hasJob: boolean;
   setHasJob: Dispatch<SetStateAction<boolean>>;
   isLoggedIn: boolean;
@@ -25,6 +27,7 @@ export const AuthContext = createContext<AuthContextProps | null>(null);
 
 const AuthProvider = ({ children }: AuthProviderProps) => {
   const [isNewFreelanceUser, setIsNewFreelanceUser] = useState(true);
+  const [isNewClientUser, setIsNewClientUser] = useState(true);
   const [hasJob, setHasJob] = useState(false);
   const isLoggedIn = true;
 
@@ -33,6 +36,8 @@ const AuthProvider = ({ children }: AuthProviderProps) => {
       value={{
         isNewFreelanceUser,
         setIsNewFreelanceUser,
+        isNewClientUser,
+        setIsNewClientUser,
         hasJob,
         setHasJob,
         isLoggedIn,
@@ -53,6 +58,8 @@ export const useAuth = () => {
     isLoggedIn,
     isNewFreelanceUser,
     setIsNewFreelanceUser,
+    isNewClientUser,
+    setIsNewClientUser,
     hasJob,
     setHasJob,
   } = context;
@@ -64,6 +71,8 @@ export const useAuth = () => {
     isLoggedIn,
     isNewFreelanceUser,
     setIsNewFreelanceUser,
+    isNewClientUser,
+    setIsNewClientUser,
     hasJob,
     setHasJob,
   };

@@ -16,7 +16,6 @@ import Link from 'next/link';
 import { ApplicationRoutes } from '@/config/routes';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { useXionWallet } from '@/context/xion-context';
 import { shortenAddress } from '@/lib/utils';
 import {
   DropdownMenu,
@@ -32,13 +31,125 @@ import { LucideChevronDown } from 'lucide-react';
 import CopyIcon from '@/icons/client/copy-icon';
 import { LoginIcon } from '@/icons/LoginIcon';
 
+const API_URL = 'https://decentwork.onrender.com/graphql';
+
+const GET_CLIENT_DETAILS = `
+  query GetClientDetails {
+    getClientDetails {
+      code
+      data {
+        address
+        bio
+        city
+        clientid
+        companyName
+        contact
+        contactName
+        country
+        createdAt
+        email
+        imageURL
+        industry
+        linkedinLink
+        role
+        size
+        socialLink
+        walletAddress
+        webLink
+      }
+      message
+      success
+    }
+  }
+`;
+
+interface ClientData {
+  address: string;
+  bio: string;
+  city: string;
+  clientid: string;
+  companyName: string;
+  contact: string;
+  contactName: string;
+  country: string;
+  createdAt: string;
+  email: string;
+  imageURL: string;
+  industry: string;
+  linkedinLink: string;
+  role: string;
+  size: string;
+  socialLink: string;
+  walletAddress: string;
+  webLink: string;
+}
+
 function ProfileDropdownMenu() {
-  const { isConnected, address, disconnect } = useXionWallet();
   const router = useRouter();
+  const [clientData, setClientData] = useState<ClientData | null>(null);
+
+  useEffect(() => {
+    const fetchClientDetails = async () => {
+      const token = localStorage.getItem('authToken');
+
+      if (!token) {
+        console.log('No auth token found');
+        return null;
+      }
+
+      try {
+        const response = await fetch(API_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            query: GET_CLIENT_DETAILS,
+          }),
+        });
+
+        const result = await response.json();
+
+        if (result.errors) {
+          console.error('GraphQL errors:', result.errors);
+          return null;
+        }
+
+        const clientDetails = result.data?.getClientDetails;
+
+        if (clientDetails?.success && clientDetails?.data) {
+          console.log('Client details:', clientDetails.data);
+          return clientDetails.data;
+        } else {
+          console.log(
+            'No client profile found or request failed:',
+            clientDetails?.message,
+          );
+          return null;
+        }
+      } catch (error) {
+        console.error('Error fetching client details:', error);
+        return null;
+      }
+    };
+
+    const getData = async () => {
+      const clientData = await fetchClientDetails();
+      setClientData(clientData);
+    };
+
+    getData();
+  }, []);
 
   const handleDisconnect = () => {
     console.log('Attempting to disconnect wallet...');
-    disconnect();
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('authToken');
+      localStorage.removeItem('userData');
+    }
+    // route to home
+    router.push(ApplicationRoutes.HOME);
   };
 
   return (
@@ -50,13 +161,10 @@ function ProfileDropdownMenu() {
           gap={'4'}
           px={'5'}
         >
-          <Text size={'2'}>{0} ATOM</Text>
-          <Skeleton loading={!isConnected && !address}>
-            <Separator orientation={'vertical'} size={'2'} className={''} />
-            <Text color={'gray'} size={'2'}>
-              {address && shortenAddress(address)}
-            </Text>
-          </Skeleton>
+          <Text size={'2'}>
+            {shortenAddress(clientData?.walletAddress || '')}
+          </Text>
+
           <LucideChevronDown size={20} />
         </Flex>
       </DropdownMenuTrigger>
@@ -70,7 +178,7 @@ function ProfileDropdownMenu() {
                 size={'2'}
                 className={'leading-tight'}
               >
-                0 ATOM
+                {clientData?.companyName || ''}
               </Text>
               <Flex align={'center'} gap={'4'}>
                 <Text
@@ -79,7 +187,7 @@ function ProfileDropdownMenu() {
                   size={'2'}
                   className={'leading-tight mr-4'}
                 >
-                  {shortenAddress(address!)}
+                  {shortenAddress(clientData?.walletAddress || '')}
                 </Text>
                 <Text>
                   <CopyIcon />
@@ -100,7 +208,7 @@ function ProfileDropdownMenu() {
           </DropdownMenuItem>
           <DropdownMenuItem
             className={'text-muted-foreground'}
-            onClick={() => router.push(ApplicationRoutes.SETTINGS)}
+            onClick={() => router.push(ApplicationRoutes.CLIENT_SETUP)}
           >
             <SettingsIcon /> Settings
             <DropdownMenuShortcut>⌘S</DropdownMenuShortcut>

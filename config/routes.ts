@@ -7,6 +7,8 @@ export const ApplicationRoutes = {
   FREELANCER_DASHBOARD: '/freelancer',
   FREELANCER_SUBMIT_PROPOSAL: '/freelancer/submit-proposal',
   CLIENT: '/client',
+  CLIENT_SETUP: '/client/setup',
+  CLIENT_ONBOARDING: '/client/setup/onboarding',
   CLIENT_DASHBOARD: '/client/dashboard',
   CLIENT_PROJECTS: '/client/projects',
   CLIENT_PROPOSALS: '/client/proposals',

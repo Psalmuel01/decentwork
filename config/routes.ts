@@ -1,0 +1,23 @@
+export const ApplicationRoutes = {
+  HOME: '/',
+  DASHBOARD: '/dashboard',
+  JOIN: '/join',
+  FREELANCER_SETUP: '/freelancer/setup',
+  FREELANCER_SETUP_ONBOARDING: '/freelancer/setup/onboarding',
+  FREELANCER_DASHBOARD: '/freelancer',
+  FREELANCER_SUBMIT_PROPOSAL: '/freelancer/submit-proposal',
+  CLIENT: '/client',
+  CLIENT_DASHBOARD: '/client/dashboard',
+  CLIENT_PROJECTS: '/client/projects',
+  CLIENT_PROPOSALS: '/client/proposals',
+  JOB_APPLY: '/freelancer/apply-job/:jobId', // Ensure this matches the route in index.tsx
+  POST_A_JOB: '/post',
+  PROPOSAL: '/proposal',
+  SETTINGS: '/settings',
+  ABOUT: '/about',
+  SERVICES: '/services',
+  HOW_IT_WORKS: '/how-it-works',
+  TERMS: '/terms',
+  PRIVACY: '/privacy',
+  USER_AGREEMENT: '/user-agreement',
+};

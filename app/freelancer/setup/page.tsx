@@ -1,7 +1,7 @@
 'use client';
 
 import { useForm } from 'react-hook-form';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -14,7 +14,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Button } from '@/components/ui/button';
-import { LucideCheck, LucideInfo } from 'lucide-react';
+import { LucideInfo } from 'lucide-react';
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
@@ -110,7 +110,7 @@ export default function Page() {
   });
 
   const { control, watch, setValue, trigger, formState, reset } = form;
-  const { errors, isValid, isDirty } = formState;
+  const { errors, isValid } = formState;
 
   // Watch for changes in fields
   const selectedCountry = watch('country');
@@ -118,9 +118,7 @@ export default function Page() {
   const termsAccepted = watch('terms');
   const selectedState = watch('state');
 
-  // @ts-expect-error "Negligible Error"
-  // @typescript-eslint/no-unused-vars
-  const [, setImageFile] = useState<File>(null);
+  const [, setImageFile] = useState<File | null>(null);
   const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
   const [skillInput, setSkillInput] = useState('');
 
@@ -249,13 +247,11 @@ export default function Page() {
         setStates(statesData);
 
         // Set state if we have existing data
-        if (existingData && existingData.city && !watch('state')) {
-          const state = statesData.find(
-            (s: any) => s.name === existingData.city,
-          );
-          if (state) {
-            setValue('state', state.id.toString());
-          }
+        if (existingData && !watch('state')) {
+          // For existing data, we need to find the state first since we only have city name
+          // This is a simplified approach - you might want to improve this logic
+          setValue('state', '');
+          setCities([]);
         } else if (!existingData) {
           // Clear state and city when country changes for new data
           setValue('state', '');
@@ -305,30 +301,30 @@ export default function Page() {
   }, [selectedCountry, setValue, trigger, existingData]);
 
   useEffect(() => {
-    window.scrollTo(0, 0);
+    const loadCountries = async () => {
+      const countriesData = await GetCountries();
+      setCountries(countriesData);
+    };
+    loadCountries();
     fetchFreelancerData();
+    window.scrollTo(0, 0);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Cleanup function to revoke object URL when component unmounts
   useEffect(() => {
     return () => {
-      if (
-        previewImageUrl &&
-        previewImageUrl !== '/images/freelancer/file.svg'
-      ) {
+      if (previewImageUrl && previewImageUrl.startsWith('blob:')) {
         URL.revokeObjectURL(previewImageUrl);
       }
     };
   }, [previewImageUrl]);
 
-  // Update preview when profile_picture changes in form context
+  // Update preview when profile_picture changes
   useEffect(() => {
     if (profilePicture instanceof File) {
-      // Cleanup previous preview URL if it exists
-      if (
-        previewImageUrl &&
-        previewImageUrl !== '/images/freelancer/file.svg'
-      ) {
+      // Clean up previous blob URL
+      if (previewImageUrl && previewImageUrl.startsWith('blob:')) {
         URL.revokeObjectURL(previewImageUrl);
       }
       const newPreviewUrl = URL.createObjectURL(profilePicture);
@@ -361,23 +357,15 @@ export default function Page() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Validate the file
     const error = validateImage(file);
     if (error) {
-      alert(error);
-      e.target.value = ''; // Reset the input
+      toast.error('Invalid file', {
+        description: error,
+      });
+      e.target.value = '';
       return;
     }
 
-    // Cleanup previous preview URL if it exists
-    if (previewImageUrl && previewImageUrl !== '/images/freelancer/file.svg') {
-      URL.revokeObjectURL(previewImageUrl);
-    }
-
-    // Create new preview URL
-    const newPreviewUrl = URL.createObjectURL(file);
-    setPreviewImageUrl(newPreviewUrl);
-    setImageFile(file);
     setValue('profile_picture', file, { shouldValidate: true });
   };
 
@@ -408,13 +396,201 @@ export default function Page() {
         return;
       }
 
-      // Upload image if exists
-      let imageUrl = '';
+      // Handle image upload if new image is selected
+      let imageUrl = existingData?.imageURL || '';
+
       if (data.profile_picture) {
-        // Handle image upload logic here
-        // For now, we'll use a placeholder
-        imageUrl = 'placeholder-image-url';
+        try {
+          const formData = new FormData();
+          formData.append('file', data.profile_picture);
+
+          const uploadResponse = await fetch(
+            'https://decentwork.onrender.com/upload-image',
+            {
+              method: 'POST',
+              body: formData,
+            },
+          );
+
+          if (!uploadResponse.ok) {
+            throw new Error('Image upload failed');
+          }
+
+          const uploadResult = await uploadResponse.json();
+          imageUrl =
+            uploadResult.imageURL || uploadResult.url || uploadResult.data?.url;
+
+          if (!imageUrl) {
+            throw new Error('No image URL returned from upload');
+          }
+        } catch (uploadError) {
+          console.error('Image upload error:', uploadError);
+          toast.error('Failed to upload image', {
+            description: 'Please try again with a different image.',
+          });
+          return;
+        }
       }
+
+      // Prepare GraphQL mutation based on whether we're updating or creating
+      const mutation = existingData
+        ? `
+            mutation UpdateFreelancerProfile(
+              $address: String,
+              $bio: String,
+              $category: String,
+              $city: String,
+              $country: String,
+              $dateOfBirth: String,
+              $email: String,
+              $fluency: String,
+              $hourlyRate: Float,
+              $imageUrl: String,
+              $language: String,
+              $name: String,
+              $phoneNumber: String,
+              $postalCode: String,
+              $skills: [String!],
+              $speciality: String,
+              $title: String
+            ) {
+              updateFreelancerProfile(
+                address: $address,
+                bio: $bio,
+                category: $category,
+                city: $city,
+                country: $country,
+                dateOfBirth: $dateOfBirth,
+                email: $email,
+                fluency: $fluency,
+                hourlyRate: $hourlyRate,
+                imageURL: $imageUrl,
+                language: $language,
+                name: $name,
+                phoneNumber: $phoneNumber,
+                postalCode: $postalCode,
+                skills: $skills,
+                speciality: $speciality,
+                title: $title
+              ) {
+                address
+                bio
+                category
+                city
+                country
+                createdAt
+                dateOfBirth
+                email
+                fluency
+                freelancerid
+                hourlyRate
+                imageURL
+                jobs
+                language
+                name
+                phoneNumber
+                postalCode
+                rating
+                skills
+                speciality
+                title
+                walletAddress
+              }
+            }
+          `
+        : `
+            mutation CreateFreelancer(
+              $address: String!,
+              $bio: String!,
+              $category: String!,
+              $city: String!,
+              $country: String!,
+              $dateOfBirth: String!,
+              $email: String!,
+              $fluency: String!,
+              $hourlyRate: Float!,
+              $language: String!,
+              $name: String!,
+              $phoneNumber: String!,
+              $postalCode: String!,
+              $skills: [String!]!,
+              $speciality: String!,
+              $title: String!,
+              $imageUrl: String
+            ) {
+              createFreelancer(
+                address: $address,
+                bio: $bio,
+                category: $category,
+                city: $city,
+                country: $country,
+                dateOfBirth: $dateOfBirth,
+                email: $email,
+                fluency: $fluency,
+                hourlyRate: $hourlyRate,
+                language: $language,
+                name: $name,
+                phoneNumber: $phoneNumber,
+                postalCode: $postalCode,
+                skills: $skills,
+                speciality: $speciality,
+                title: $title,
+                imageURL: $imageUrl
+              ) {
+                address
+                bio
+                category
+                city
+                country
+                createdAt
+                dateOfBirth
+                email
+                fluency
+                freelancerid
+                hourlyRate
+                imageURL
+                jobs
+                language
+                name
+                phoneNumber
+                postalCode
+                rating
+                skills
+                speciality
+                title
+                walletAddress
+              }
+            }
+          `;
+
+      // Get selected country and city names for the mutation
+      const selectedCountryObj = countries.find(
+        (c: { id: number; name: string }) => c.id.toString() === data.country,
+      );
+      const selectedCityObj = cities.find(
+        (c: { id: number; name: string }) => c.id.toString() === data.city,
+      );
+
+      // Prepare variables for the mutation
+      const variables = {
+        address: data.address,
+        bio: data.bio,
+        category: data.category,
+        city: (selectedCityObj as { name: string })?.name || data.city,
+        country: (selectedCountryObj as { name: string })?.name || data.country,
+        dateOfBirth: data.date_of_birth.toISOString().split('T')[0],
+        email: data.email,
+        fluency: data.fluency,
+        hourlyRate: data.hourlyRate,
+        language: data.language,
+        name: data.fullname,
+        phoneNumber: data.phone,
+        postalCode: data.zipcode,
+        skills: data.skills,
+        speciality: data.speciality,
+        title: data.title,
+        imageUrl: imageUrl || null,
+      };
 
       const response = await fetch('https://decentwork.onrender.com/graphql', {
         method: 'POST',
@@ -423,72 +599,8 @@ export default function Page() {
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          query: `
-            mutation UpdateFreelancerProfile(
-              $address: String
-              $bio: String
-              $category: String
-              $city: String
-              $country: String
-              $dateOfBirth: String
-              $email: String
-              $fluency: String
-              $hourlyRate: Float
-              $imageUrl: String
-              $language: String
-              $name: String
-              $phoneNumber: String
-              $postalCode: String
-              $skills: [String!]
-              $speciality: String
-              $title: String
-            ) {
-              updateFreelancerProfile(
-                address: $address
-                bio: $bio
-                category: $category
-                city: $city
-                country: $country
-                dateOfBirth: $dateOfBirth
-                email: $email
-                fluency: $fluency
-                hourlyRate: $hourlyRate
-                imageURL: $imageUrl
-                language: $language
-                name: $name
-                phoneNumber: $phoneNumber
-                postalCode: $postalCode
-                skills: $skills
-                speciality: $speciality
-                title: $title
-              ) {
-                freelancerid
-                name
-                email
-                walletAddress
-                createdAt
-              }
-            }
-          `,
-          variables: {
-            address: data.address,
-            bio: data.bio,
-            category: data.category,
-            city: data.city,
-            country: data.country,
-            dateOfBirth: data.date_of_birth.toISOString().split('T')[0],
-            email: data.email,
-            fluency: data.fluency,
-            hourlyRate: data.hourlyRate,
-            language: data.language,
-            name: data.fullname,
-            phoneNumber: data.phone,
-            postalCode: data.zipcode,
-            skills: data.skills,
-            speciality: data.speciality,
-            title: data.title,
-            imageUrl: imageUrl,
-          },
+          query: mutation,
+          variables,
         }),
       });
 
@@ -498,23 +610,33 @@ export default function Page() {
         throw new Error(result.errors[0].message);
       }
 
-      toast.success('Profile updated successfully!', {
-        description: 'Your changes have been saved.',
-      });
+      toast.success(
+        existingData
+          ? 'Profile updated successfully!'
+          : 'Account created successfully!',
+        {
+          description: existingData
+            ? 'Your changes have been saved.'
+            : 'You can now start using your freelancer account.',
+        },
+      );
 
       router.push(ApplicationRoutes.FREELANCER_DASHBOARD);
     } catch (error) {
       console.error('Error updating freelancer profile:', error);
-      toast.error('Failed to update profile', {
-        description:
-          error instanceof Error ? error.message : 'Please try again.',
-      });
+      toast.error(
+        existingData ? 'Failed to update profile' : 'Failed to create account',
+        {
+          description:
+            error instanceof Error ? error.message : 'Please try again.',
+        },
+      );
     } finally {
       setIsSubmitting(false);
     }
   }
 
-  const renderImage = useCallback(() => {
+  const imageElement = useMemo(() => {
     return (
       <div className="relative w-32 h-32 rounded-full transition-colors">
         {previewImageUrl ? (
@@ -542,8 +664,6 @@ export default function Page() {
     );
   }, [previewImageUrl]);
 
-  const imageElement = useMemo(() => renderImage(), [renderImage]);
-
   return (
     <>
       <Form {...form}>
@@ -559,12 +679,15 @@ export default function Page() {
               >
                 <Box>
                   <Heading className="font-poppins" size={'8'}>
-                    Update freelancer profile
+                    {existingData
+                      ? 'Update freelancer profile'
+                      : 'Setup freelancer account'}
                   </Heading>
 
                   <p className="text-muted-foreground text-base mt-2 max-w-screen-md">
-                    Update your profile information to keep it current and
-                    attract more clients!
+                    {existingData
+                      ? 'Update your profile information to keep it current and attract more clients!'
+                      : 'Complete your profile to start finding amazing projects!'}
                   </p>
                 </Box>
 
@@ -799,19 +922,15 @@ export default function Page() {
                                 </FormControl>
 
                                 <SelectContent className="bg-background w-full max-h-[300px] overflow-y-auto">
-                                  {countries.map((country) => (
+                                  {countries.map((country: any) => (
                                     <SelectItem
-                                      // @ts-expect-error "Negligible Error"
                                       key={country?.id}
-                                      // @ts-expect-error "Negligible Error"
                                       value={country?.id.toString()}
                                       className="flex items-center gap-2"
                                     >
-                                      {/* @ts-expect-error "Negligible Error" */}
                                       <span className="mr-2">
                                         {country?.emoji}
                                       </span>
-                                      {/* @ts-expect-error "Negligible Error" */}
                                       {country?.name}
                                     </SelectItem>
                                   ))}
@@ -853,14 +972,11 @@ export default function Page() {
                                   </FormControl>
 
                                   <SelectContent className="bg-white max-h-[300px] overflow-y-auto">
-                                    {states.map((state) => (
+                                    {states.map((state: any) => (
                                       <SelectItem
-                                        // @ts-expect-error "Negligible Error"
                                         key={state.id}
-                                        // @ts-expect-error "Negligible Error"
                                         value={state.id.toString()}
                                       >
-                                        {/* @ts-expect-error "Negligible Error" */}
                                         {state.name}
                                       </SelectItem>
                                     ))}
@@ -894,14 +1010,11 @@ export default function Page() {
                                   </FormControl>
 
                                   <SelectContent className="bg-background max-h-[300px] overflow-y-auto">
-                                    {cities.map((city) => (
+                                    {cities.map((city: any) => (
                                       <SelectItem
-                                        // @ts-expect-error "Negligible Error"
                                         key={city.id}
-                                        // @ts-expect-error "Negligible Error"
                                         value={city.id.toString()}
                                       >
-                                        {/* @ts-expect-error "Negligible Error" */}
                                         {city.name}
                                       </SelectItem>
                                     ))}
@@ -1299,8 +1412,12 @@ export default function Page() {
                           {isLoading
                             ? 'Loading...'
                             : isSubmitting
-                              ? 'Updating Profile...'
-                              : 'Update Profile'}
+                              ? existingData
+                                ? 'Updating Profile...'
+                                : 'Creating Account...'
+                              : existingData
+                                ? 'Update Profile'
+                                : 'Join as a Freelancer'}
                         </Button>
                       </Flex>
 

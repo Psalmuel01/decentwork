@@ -306,7 +306,7 @@ export default function FreelancerNavbar() {
           <SearchIcon strokeWidth={1} className={'text-foreground'} />
         </Link>
         <NotificationIcon />
-        <Text>{'100.50'} ATOM</Text>
+        {/*<Text>{'100.50'} ATOM</Text>*/}
         <ProfileDropdownMenu />
       </Flex>
     </Flex>

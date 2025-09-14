@@ -147,7 +147,7 @@ interface ClientData {
 
 interface ProjectData {
   projectid: string;
-  title: string;
+  projectName: string;
   description: string;
   budget: string;
   status: string;
@@ -419,7 +419,7 @@ const Page = () => {
 
     return [
       {
-        title: clientData?.walletAddress ? '1039' : '0',
+        title: clientData?.walletAddress ? '0' : '0',
         subtitle: 'USD',
         description: 'Account Balance',
         icon: <WalletIcon />,
@@ -661,7 +661,7 @@ const Page = () => {
                             key={`project-${index}-${project.projectid}`}
                             data={{
                               id: project.projectid,
-                              title: project.title,
+                              title: project.projectName,
                               description: project.description,
                               budget: project.budget,
                               status: project.status,

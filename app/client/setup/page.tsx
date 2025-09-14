@@ -1,7 +1,7 @@
 'use client';
 
 import { useForm } from 'react-hook-form';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -187,6 +187,9 @@ export default function Page() {
       }
     } catch (error) {
       console.error('Error fetching client data:', error);
+      toast.error('Failed to load profile data', {
+        description: 'Please refresh the page and try again.',
+      });
     } finally {
       setIsLoading(false);
     }
@@ -200,15 +203,13 @@ export default function Page() {
     };
     loadCountries();
     fetchClientData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Cleanup function to revoke object URL when component unmounts
   useEffect(() => {
     return () => {
-      if (
-        previewImageUrl &&
-        previewImageUrl !== '/images/freelancer/file.svg'
-      ) {
+      if (previewImageUrl && previewImageUrl.startsWith('blob:')) {
         URL.revokeObjectURL(previewImageUrl);
       }
     };
@@ -217,10 +218,8 @@ export default function Page() {
   // Update preview when profile_picture changes
   useEffect(() => {
     if (profilePicture instanceof File) {
-      if (
-        previewImageUrl &&
-        previewImageUrl !== '/images/freelancer/file.svg'
-      ) {
+      // Clean up previous blob URL
+      if (previewImageUrl && previewImageUrl.startsWith('blob:')) {
         URL.revokeObjectURL(previewImageUrl);
       }
       const newPreviewUrl = URL.createObjectURL(profilePicture);
@@ -246,19 +245,41 @@ export default function Page() {
 
     const error = validateImage(file);
     if (error) {
-      alert(error);
+      toast.error('Invalid file', {
+        description: error,
+      });
       e.target.value = '';
       return;
     }
 
-    if (previewImageUrl && previewImageUrl !== '/images/freelancer/file.svg') {
-      URL.revokeObjectURL(previewImageUrl);
+    setValue('profile_picture', file, { shouldValidate: true });
+  };
+
+  // Upload image to server
+  const uploadImage = async (file: File): Promise<string> => {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const uploadResponse = await fetch(
+      'https://decentwork.onrender.com/upload-image',
+      {
+        method: 'POST',
+        body: formData,
+      },
+    );
+
+    if (!uploadResponse.ok) {
+      const errorText = await uploadResponse.text();
+      throw new Error(`Image upload failed: ${errorText}`);
     }
 
-    const newPreviewUrl = URL.createObjectURL(file);
-    setPreviewImageUrl(newPreviewUrl);
-    setImageFile(file);
-    setValue('profile_picture', file, { shouldValidate: true });
+    const uploadResult = await uploadResponse.json();
+
+    if (!uploadResult.imageURL) {
+      throw new Error('No image URL returned from upload');
+    }
+
+    return uploadResult.imageURL;
   };
 
   async function onSubmit(data: z.infer<typeof FormSchema>) {
@@ -266,21 +287,65 @@ export default function Page() {
       setIsSubmitting(true);
       const token = localStorage.getItem('authToken');
       if (!token) {
-        toast.error('Authentication token not found', {
+        toast.error('Authentication required', {
           description: 'Please login again.',
         });
         return;
       }
 
+      // Handle image upload if new image is selected
       let imageUrl = existingData?.imageURL || '';
+
       if (data.profile_picture) {
-        imageUrl = 'placeholder-image-url'; // Replace with actual image upload logic
+        try {
+          imageUrl = await uploadImage(data.profile_picture);
+        } catch (uploadError) {
+          console.error('Image upload error:', uploadError);
+          toast.error('Failed to upload image', {
+            description:
+              uploadError instanceof Error
+                ? uploadError.message
+                : 'Please try again with a different image.',
+          });
+          return;
+        }
       }
 
+      // Prepare GraphQL mutation based on whether we're updating or creating
       const mutation = existingData
         ? `
-            mutation UpdateClientProfile($address: String, $bio: String, $city: String, $companyName: String, $contact: String, $contactName: String, $country: String, $email: String, $industry: String, $linkedinLink: String, $size: String, $socialLink: String, $webLink: String) {
-              updateClientProfile(address: $address, bio: $bio, city: $city, companyName: $companyName, contact: $contact, contactName: $contactName, country: $country, email: $email, industry: $industry, linkedinLink: $linkedinLink, size: $size, socialLink: $socialLink, webLink: $webLink) {
+            mutation UpdateClientProfile(
+              $address: String,
+              $bio: String,
+              $city: String,
+              $companyName: String,
+              $contact: String,
+              $contactName: String,
+              $country: String,
+              $email: String,
+              $industry: String,
+              $linkedinLink: String,
+              $size: String,
+              $socialLink: String,
+              $webLink: String,
+              $imageURL: String
+            ) {
+              updateClientProfile(
+                address: $address,
+                bio: $bio,
+                city: $city,
+                companyName: $companyName,
+                contact: $contact,
+                contactName: $contactName,
+                country: $country,
+                email: $email,
+                industry: $industry,
+                linkedinLink: $linkedinLink,
+                size: $size,
+                socialLink: $socialLink,
+                webLink: $webLink,
+                imageURL: $imageURL
+              ) {
                 address
                 bio
                 city
@@ -303,8 +368,38 @@ export default function Page() {
             }
           `
         : `
-            mutation CreateClient($companyName: String!, $contact: String!, $contactName: String!, $email: String!, $industry: String!, $size: String!, $bio: String, $address: String, $city: String, $country: String, $imageUrl: String, $linkedinLink: String, $socialLink: String, $webLink: String) {
-              createClient(companyName: $companyName, contact: $contact, contactName: $contactName, email: $email, industry: $industry, size: $size, bio: $bio, address: $address, city: $city, country: $country, imageURL: $imageUrl, linkedinLink: $linkedinLink, socialLink: $socialLink, webLink: $webLink) {
+            mutation CreateClient(
+              $companyName: String!,
+              $contact: String!,
+              $contactName: String!,
+              $email: String!,
+              $industry: String!,
+              $size: String!,
+              $bio: String,
+              $address: String,
+              $city: String,
+              $country: String,
+              $imageURL: String,
+              $linkedinLink: String,
+              $socialLink: String,
+              $webLink: String
+            ) {
+              createClient(
+                companyName: $companyName,
+                contact: $contact,
+                contactName: $contactName,
+                email: $email,
+                industry: $industry,
+                size: $size,
+                bio: $bio,
+                address: $address,
+                city: $city,
+                country: $country,
+                imageURL: $imageURL,
+                linkedinLink: $linkedinLink,
+                socialLink: $socialLink,
+                webLink: $webLink
+              ) {
                 address
                 bio
                 city
@@ -327,6 +422,24 @@ export default function Page() {
             }
           `;
 
+      // Prepare variables for the mutation
+      const variables = {
+        companyName: data.companyName,
+        contact: data.contact,
+        contactName: data.contactName,
+        email: data.email,
+        industry: data.industry,
+        size: data.size,
+        bio: data.bio || null,
+        address: data.address || null,
+        city: data.city || null,
+        country: data.country || null,
+        imageURL: imageUrl || null,
+        linkedinLink: data.linkedinLink || null,
+        socialLink: data.socialLink || null,
+        webLink: data.webLink || null,
+      };
+
       const response = await fetch('https://decentwork.onrender.com/graphql', {
         method: 'POST',
         headers: {
@@ -335,22 +448,7 @@ export default function Page() {
         },
         body: JSON.stringify({
           query: mutation,
-          variables: {
-            companyName: data.companyName,
-            contact: data.contact,
-            contactName: data.contactName,
-            email: data.email,
-            industry: data.industry,
-            size: data.size,
-            bio: data.bio || undefined,
-            address: data.address || undefined,
-            city: data.city || undefined,
-            country: data.country || undefined,
-            imageUrl: imageUrl || undefined,
-            linkedinLink: data.linkedinLink || undefined,
-            socialLink: data.socialLink || undefined,
-            webLink: data.webLink || undefined,
-          },
+          variables,
         }),
       });
 
@@ -371,6 +469,7 @@ export default function Page() {
         },
       );
 
+      // Redirect to dashboard
       window.location.href =
         ApplicationRoutes.CLIENT_DASHBOARD || '/client-dashboard';
     } catch (error) {
@@ -387,7 +486,7 @@ export default function Page() {
     }
   }
 
-  const renderImage = useCallback(() => {
+  const imageElement = useMemo(() => {
     return (
       <div className="relative w-32 h-32 rounded-full transition-colors">
         {previewImageUrl ? (
@@ -414,9 +513,6 @@ export default function Page() {
       </div>
     );
   }, [previewImageUrl]);
-
-  const imageElement = useMemo(() => renderImage(), [renderImage]);
-
   return (
     <>
       <Form {...form}>
@@ -915,7 +1011,7 @@ export default function Page() {
                         </Button>
                       </Flex>
 
-                      <Flex
+                      {/*<Flex
                         align={'center'}
                         className={'text-center'}
                         gap={'1'}
@@ -925,7 +1021,7 @@ export default function Page() {
                         <Link className={'font-medium text-primary'} href={'/'}>
                           Sign in
                         </Link>
-                      </Flex>
+                      </Flex>*/}
                     </div>
                   </>
                 )}

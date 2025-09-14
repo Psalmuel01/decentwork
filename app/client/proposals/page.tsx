@@ -190,7 +190,13 @@ const Page = () => {
               <div className="w-2/5 font-circular">
                 <div className="bg-[#F4F4F5] border border-[#E4E4E7] rounded-md px-5 py-6">
                   <div className="flex items-center space-x-3">
-                    <Image width={100} height={100} className={"h-full w-full"} src="/images/client/client.png" alt="client" />
+                    <Image
+                      width={100}
+                      height={100}
+                      className={'h-full w-full'}
+                      src="/images/client/client.png"
+                      alt="client"
+                    />
                     <div className="">
                       <p className="text-[#18181B] text-base">Onest Man</p>
                       <div className="flex items-center space-x-4">
@@ -221,7 +227,7 @@ const Page = () => {
 
                   <div className="flex justify-between mt-4">
                     <div className="flex flex-col items-center">
-                      <p className="text-sm font-medium">3 XION/hr</p>
+                      <p className="text-sm font-medium">3 AR/hr</p>
                       <p className="text-[#7E8082] text-xs font-normal">Rate</p>
                     </div>
 
@@ -282,7 +288,13 @@ const Page = () => {
               Hire Onest Man
             </p>
 
-            <Image width={100} height={100} className={"h-full w-full"} src="/images/client/client.png" alt="client" />
+            <Image
+              width={100}
+              height={100}
+              className={'h-full w-full'}
+              src="/images/client/client.png"
+              alt="client"
+            />
             <span className="text-sm text-[#7E8082]">Freelancer</span>
 
             <div className=" flex justify-center">
@@ -333,7 +345,13 @@ const Page = () => {
               Reject Proposal
             </p>
 
-            <Image width={100} height={100} className={"w-full h-full"} src="/images/client/client.png" alt="client" />
+            <Image
+              width={100}
+              height={100}
+              className={'w-full h-full'}
+              src="/images/client/client.png"
+              alt="client"
+            />
             <span className="text-sm text-[#7E8082]">Freelancer</span>
 
             <div className=" flex justify-center">

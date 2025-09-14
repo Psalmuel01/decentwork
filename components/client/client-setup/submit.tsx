@@ -168,7 +168,7 @@ const SubmitDetails = ({
                 <div className="rounded-lg border border-[#E4E4E7] p-4">
                   <div className="flex justify-between mb-2 items-center">
                     <p className="font-medium text-[#545756] font-circular text-lg">
-                      {formData.rate || 0} XION
+                      {formData.rate || 0} AR
                     </p>
                     <div
                       onClick={() => setActiveStep(4)}

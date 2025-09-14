@@ -84,7 +84,7 @@ export function LatestProposals() {
                   </Flex>
                 </Table.RowHeaderCell>
                 <Table.Cell align="center">{data.projectTitle}</Table.Cell>
-                <Table.Cell align="right">{data.bidAmount} XION</Table.Cell>
+                <Table.Cell align="right">{data.bidAmount} AR</Table.Cell>
               </Table.Row>
             ))}
           </Table.Body>

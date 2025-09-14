@@ -16,14 +16,20 @@ const ActiveHireJob = ({
       <div className="">
         <div className="flex space-x-3">
           <div className="h-8 rounded-full w-8 min-w-16 flex items-center justify-center">
-            <Image width={100} height={100} className={"w-auto h-auto"} src="/images/client/client.png" alt="client" />
+            <Image
+              width={100}
+              height={100}
+              className={'w-auto h-auto'}
+              src="/images/client/client.png"
+              alt="client"
+            />
           </div>
 
           <div className="w-full">
             <div className="flex justify-between items-center font-circular space-x-5 w-full">
               <p className=" text-sm text-[#545756]">Onest Man</p>
               <span className="text-[#7E8082] text-sm ">
-                <span className="text-[#18181B]">50.5</span> XION
+                <span className="text-[#18181B]">50.5</span> AR
               </span>
             </div>
 

@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import React, { useEffect, useState } from 'react';
 import { useClient } from '@/context/client-context';
@@ -213,7 +213,7 @@ const ProposalsList = ({ jobId, onProposalAccepted }: ProposalListProps) => {
                       Freelancer: {proposal.freelancer.slice(0, 12)}...
                     </p>
                     <p className="text-[#7E8082] text-sm mt-1">
-                      Bid: {proposal.bid_amount} XION
+                      Bid: {proposal.bid_amount} AR
                     </p>
                     {proposal.job_title && !jobId && (
                       <p className="text-sm text-blue-600 mt-1">
@@ -258,7 +258,7 @@ const ProposalsList = ({ jobId, onProposalAccepted }: ProposalListProps) => {
                   <div>
                     <p className="text-sm text-[#7E8082]">Bid Amount</p>
                     <p className="text-[#545756] font-medium">
-                      {proposal.bid_amount} XION
+                      {proposal.bid_amount} AR
                     </p>
                   </div>
 

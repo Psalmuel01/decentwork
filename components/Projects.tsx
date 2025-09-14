@@ -24,7 +24,7 @@ import {
   SelectLabel,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
+} from '@/components/ui/select';
 import { LucideSearch } from 'lucide-react';
 
 const TableDummyData = [
@@ -128,7 +128,7 @@ export function Projects() {
               placeholder="Search..."
             />
           </Flex>
-          <Flex align={"center"} gap={"3"}>
+          <Flex align={'center'} gap={'3'}>
             <Select>
               <SelectTrigger className="min-w-[120px]">
                 <SelectValue placeholder="Status" />
@@ -136,7 +136,7 @@ export function Projects() {
               <SelectContent>
                 <SelectGroup>
                   <SelectLabel>Status</SelectLabel>
-                  {DummyStatus.map(eachStatus => (
+                  {DummyStatus.map((eachStatus) => (
                     <SelectItem key={eachStatus} value={eachStatus}>
                       {eachStatus.replace(/_/g, ' ')}
                     </SelectItem>
@@ -152,7 +152,7 @@ export function Projects() {
               <SelectContent>
                 <SelectGroup>
                   <SelectLabel>Status</SelectLabel>
-                  {DummyStatus.map(eachStatus => (
+                  {DummyStatus.map((eachStatus) => (
                     <SelectItem key={eachStatus} value={eachStatus}>
                       {eachStatus.replace(/_/g, ' ')}
                     </SelectItem>
@@ -193,7 +193,7 @@ export function Projects() {
                   {data.projectTitle}
                 </Table.RowHeaderCell>
                 <Table.Cell align="center">{data.proposals}</Table.Cell>
-                <Table.Cell align="center">{data.budget} XION</Table.Cell>
+                <Table.Cell align="center">{data.budget} AR</Table.Cell>
                 <Table.Cell align="center">{data.hire}</Table.Cell>
                 <Table.Cell align="center">{data.projectStatus}</Table.Cell>
                 <Table.Cell align="right">{data.postedDate}</Table.Cell>

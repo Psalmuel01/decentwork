@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import React, { useEffect, useState } from 'react';
 import { useFreelancer } from '@/context/freelancer-context';
@@ -119,7 +119,9 @@ const AppliedJobs = () => {
   if (jobs.length === 0) {
     return (
       <div className="py-8 text-center">
-        <p className="text-[#7E8082]">You haven&apos;t applied to any jobs yet.</p>
+        <p className="text-[#7E8082]">
+          You haven&apos;t applied to any jobs yet.
+        </p>
       </div>
     );
   }
@@ -146,7 +148,7 @@ const AppliedJobs = () => {
               <div className="flex items-center gap-4 mt-3">
                 <div className="flex items-center space-x-1">
                   <p className="text-sm font-normal text-[#7E8082]">Budget:</p>
-                  <p className="text-[#545756]">{job.budget} XION</p>
+                  <p className="text-[#545756]">{job.budget} AR</p>
                 </div>
 
                 <div className="flex items-center space-x-2">
@@ -189,7 +191,7 @@ const AppliedJobs = () => {
                     <div>
                       <p className="text-sm text-[#7E8082]">Budget</p>
                       <p className="text-[#545756] font-medium">
-                        {selectedJob.budget} XION
+                        {selectedJob.budget} AR
                       </p>
                     </div>
 

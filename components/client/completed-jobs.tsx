@@ -157,7 +157,7 @@ const CompletedJobs = () => {
               <div className="flex items-center gap-4 mt-3">
                 <div className="flex items-center space-x-1">
                   <p className="text-sm font-normal text-[#7E8082]">Budget:</p>
-                  <p className="text-[#545756]">{job.budget} XION</p>
+                  <p className="text-[#545756]">{job.budget} AR</p>
                 </div>
 
                 <div className="flex items-center space-x-1">
@@ -248,7 +248,7 @@ const CompletedJobs = () => {
                         <div>
                           <p className="text-sm text-[#7E8082]">Budget</p>
                           <p className="text-[#545756] font-medium">
-                            {selectedJob.budget} XION
+                            {selectedJob.budget} AR
                           </p>
                         </div>
 

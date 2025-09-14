@@ -61,7 +61,7 @@ const dummyClient: ExpertCardType[] = [
       'I am a highly creative designer with over three years of experience in the design industry. I have a deep understanding...',
     jobs: 55,
     name: 'Onest Man',
-    rate: '3 XION/hr',
+    rate: '3 AR/hr',
     rating: 4.9,
     title: 'UIUX Designer, Illustrator, Motion & Brand Designer',
     location: 'Nigeria',
@@ -71,7 +71,7 @@ const dummyClient: ExpertCardType[] = [
       'I am a highly creative designer with over three years of experience in the design industry. I have a deep understanding...',
     jobs: 55,
     name: 'Onest Man',
-    rate: '3 XION/hr',
+    rate: '3 AR/hr',
     rating: 4.9,
     title: 'UIUX Designer, Illustrator, Motion & Brand Designer',
     location: 'Nigeria',
@@ -81,7 +81,7 @@ const dummyClient: ExpertCardType[] = [
       'I am a highly creative designer with over three years of experience in the design industry. I have a deep understanding...',
     jobs: 55,
     name: 'Onest Man',
-    rate: '3 XION/hr',
+    rate: '3 AR/hr',
     rating: 4.9,
     title: 'UIUX Designer, Illustrator, Motion & Brand Designer',
     location: 'Nigeria',
@@ -91,7 +91,7 @@ const dummyClient: ExpertCardType[] = [
       'I am a highly creative designer with over three years of experience in the design industry. I have a deep understanding...',
     jobs: 55,
     name: 'Onest Man',
-    rate: '3 XION/hr',
+    rate: '3 AR/hr',
     rating: 4.9,
     title: 'UIUX Designer, Illustrator, Motion & Brand Designer',
     location: 'Nigeria',
@@ -101,7 +101,7 @@ const dummyClient: ExpertCardType[] = [
 /*const DummyDashboardCards = [
   {
     title: '1039',
-    subtitle: 'XION',
+    subtitle: 'AR',
     description: 'Wallet Balance',
     icon: <WalletIcon />,
     showSelect: false,
@@ -574,8 +574,8 @@ const Page = () => {
                                 project details and expectations
                               </li>
                               <li>
-                                Monitor project progress in this Active
-                                Projects section
+                                Monitor project progress in this Active Projects
+                                section
                               </li>
                               <li>
                                 Make payment when the freelancer completes their
@@ -584,8 +584,8 @@ const Page = () => {
                             </ul>
                             <p className="text-xs text-blue-600 mt-3 italic">
                               Note: The freelancer will mark the job as complete
-                              when finished. You&apos;ll be able to review the work
-                              and make payment.
+                              when finished. You&apos;ll be able to review the
+                              work and make payment.
                             </p>
                           </div>
                         </div>
@@ -1008,7 +1008,13 @@ const Page = () => {
               Terminate Contract
             </p>
 
-            <Image width={100} height={100} className={"h-full w-full"} src="/images/client/client.png" alt="client" />
+            <Image
+              width={100}
+              height={100}
+              className={'h-full w-full'}
+              src="/images/client/client.png"
+              alt="client"
+            />
             <span className="text-sm text-[#7E8082]">Freelancer</span>
 
             <div className=" flex justify-center">

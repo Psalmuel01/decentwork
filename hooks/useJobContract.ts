@@ -185,11 +185,11 @@ export const useJobContract = () => {
       applicants: '0 to 5', // Default placeholder as this may not be in contract
       detail: job.description || 'No description provided',
       duration: job.duration || '1 - 3 weeks',
-      funding: `${job.budget || '0'} XION`,
+      funding: `${job.budget || '0'} AR`,
       hourlyPay: `${calculateHourlyRate(
         job.budget || '0',
         job.duration || '',
-      )} XION`,
+      )} AR`,
       location: job.location || 'Remote',
       role: job.title || 'Untitled Job',
       skills: job.skills || ['General'],

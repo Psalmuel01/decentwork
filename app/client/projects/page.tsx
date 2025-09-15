@@ -511,10 +511,9 @@ const Page = () => {
                               id: post.id || `job-${index}`,
                               ...post,
                             }}
-                            // @ts-expect-error "Negligible Error"
-                            editJob={editJob}
+                            // editJob={editJob}
                             onSelectForPayment={() => selectJobForPayment(post)}
-                            getProposalCount={getProposalCount}
+                            // getProposalCount={post.id ? getProposalCount(post.id) : 0}
                           />
                         ))}
                       </div>
@@ -714,10 +713,9 @@ const Page = () => {
                               id: post.id || `job-${index}`,
                               ...post,
                             }}
-                            // @ts-expect-error "Negligible Error"
-                            editJob={editJob}
+                            // editJob={editJob}
                             onSelectForPayment={() => selectJobForPayment(post)}
-                            getProposalCount={getProposalCount}
+                            // getProposalCount={getProposalCount}
                           />
                         ))}
                       </div>

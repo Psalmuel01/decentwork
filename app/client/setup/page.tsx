@@ -93,7 +93,7 @@ export default function Page() {
       webLink: '',
       linkedinLink: '',
       socialLink: '',
-      terms: false,
+      // terms: false,
     },
   });
 
@@ -714,7 +714,6 @@ export default function Page() {
                                       value={country?.name}
                                       className="flex items-center gap-2"
                                     >
-                                      {/* @ts-expect-error "Negligible Error" */}
                                       <span className="mr-2">
                                         {country?.emoji}
                                       </span>

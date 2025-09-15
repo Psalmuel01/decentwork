@@ -851,7 +851,7 @@ const Page = () => {
                               key={`bounty-${index}-${project.projectid}`}
                               data={{
                                 id: project.projectid,
-                                title: project.title,
+                                title: project.projectName,
                                 description: project.description,
                                 budget: project.budget,
                                 status: project.status,
@@ -986,8 +986,8 @@ const Page = () => {
                 <span className="text-[#18181B] font-medium">
                   ${paymentAmount}
                 </span>{' '}
-                for {selectedProject?.title || 'this project'}. Once confirmed,
-                the payment will be processed.
+                for {selectedProject?.projectName || 'this project'}. Once
+                confirmed, the payment will be processed.
               </span>
             </div>
 
@@ -1066,7 +1066,7 @@ const Page = () => {
 
           <div className="mb-3 flex space-x-3">
             <DialogClose className="w-full">
-              <Button className="text-white w-full mt-6 border border-gray-300 bg-white text-primary hover:bg-white focus:bg-white">
+              <Button className="w-full mt-6 border border-gray-300 bg-white text-primary hover:bg-white focus:bg-white">
                 Cancel
               </Button>
             </DialogClose>
@@ -1100,8 +1100,8 @@ const Page = () => {
             <div className="max-w-80">
               <p className="font-circular text-[#545756] text-base text-center mt-5">
                 Your payment of ${paymentAmount} has been successfully processed
-                for {selectedProject?.title || 'the project'}. The freelancer
-                will be notified of the payment.
+                for {selectedProject?.projectName || 'the project'}. The
+                freelancer will be notified of the payment.
               </p>
             </div>
 

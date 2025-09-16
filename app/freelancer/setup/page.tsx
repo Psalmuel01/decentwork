@@ -1400,10 +1400,8 @@ export default function Page() {
                         <Button
                           className={`h-12 ${!isValid || !termsAccepted || isSubmitting ? 'bg-[#BEBEBE]' : ''}`}
                           disabled={
-                            !isValid ||
-                            !termsAccepted ||
-                            isSubmitting ||
-                            isLoading
+                            // !isValid ||
+                            !termsAccepted || isSubmitting || isLoading
                           }
                           variant={'default'}
                           size={'lg'}

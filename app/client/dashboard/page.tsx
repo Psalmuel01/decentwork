@@ -137,24 +137,24 @@ const VIEW_FREELANCERS = `
   }
 `;
 
-const VIEW_PROJECTS = `
-  query ViewProjects {
-    viewProjects {
-      _id
-      companyName
-      createdAt
-      description
-      location
-      maxAmount
-      maxDuration
-      minAmount
-      minDuration
-      projectName
-      tags
-      walletAddress
-    }
-  }
-`;
+// const VIEW_PROJECTS = `
+//   query ViewProjects {
+//     viewProjects {
+//       _id
+//       companyName
+//       createdAt
+//       description
+//       location
+//       maxAmount
+//       maxDuration
+//       minAmount
+//       minDuration
+//       projectName
+//       tags
+//       walletAddress
+//     }
+//   }
+// `;
 
 const GET_JOBS = `
   query GetJobs {
@@ -212,20 +212,6 @@ interface ClientData {
   socialLink: string;
   walletAddress: string;
   webLink: string;
-}
-
-interface ProjectData {
-  projectid: string;
-  projectName: string;
-  description: string;
-  budget: string;
-  status: string;
-  category: string;
-  skills: string[];
-  timeline: string;
-  createdAt: string;
-  clientid: string;
-  proposals?: ProposalData[];
 }
 
 interface JobData {
@@ -346,12 +332,12 @@ const Page = () => {
 
   // State management
   const [clientData, setClientData] = useState<ClientData | null>(null);
-  const [projects, setProjects] = useState<ProjectData[]>([]);
+  // const [projects, setProjects] = useState<ProjectData[]>([]);
   const [jobs, setJobs] = useState<JobData[]>([]);
   const [freelancers, setFreelancers] = useState<FreelancerData[]>([]);
-  const [selectedProject, setSelectedProject] = useState<ProjectData | null>(
-    null,
-  );
+  // const [selectedProject, setSelectedProject] = useState<ProjectData | null>(
+  //   null,
+  // );
   const [selectedJob, setSelectedJob] = useState<JobData | null>(null);
   // const [isLoadingProjects, setIsLoadingProjects] = useState(false);
   const [isLoadingJobs, setIsLoadingJobs] = useState(false);
@@ -553,21 +539,21 @@ const Page = () => {
     window.scrollTo(0, 0);
   }, []);
 
-  // Get proposal count for a project
-  const getProposalCount = (projectId: string): number => {
-    const project = projects.find((p) => p.projectid === projectId);
-    return project?.proposals?.length || 0;
+  // Get proposal count for a job
+  const getProposalCount = (jobId: string): number => {
+    const job = jobs.find((j) => j.jobid === jobId);
+    return job?.proposals?.length || 0;
   };
 
   // Generate dashboard cards data
   const getDashboardCardsData = () => {
-    const totalProposals = projects.reduce(
-      (sum, project) => sum + (project.proposals?.length || 0),
+    const totalProposals = jobs.reduce(
+      (sum, job) => sum + (job.proposals?.length || 0),
       0,
     );
-    const activeProjects = projects.filter((p) => p.status === 'active').length;
-    const completedProjects = projects.filter(
-      (p) => p.status === 'completed',
+    const activeProjects = jobs.filter((j) => j.status === 'active').length;
+    const completedProjects = jobs.filter(
+      (j) => j.status === 'completed',
     ).length;
 
     return [
@@ -650,8 +636,8 @@ const Page = () => {
   };
 
   const handleTerminateContract = async () => {
-    if (!selectedProject || !isAuthenticated) {
-      setTxError('Please log in and select a project first');
+    if (!selectedJob || !isAuthenticated) {
+      setTxError('Please log in and select a job first');
       return;
     }
 
@@ -679,7 +665,7 @@ const Page = () => {
     localStorage.removeItem('authToken');
     setIsAuthenticated(false);
     setClientData(null);
-    setProjects([]);
+    setJobs([]);
     setFreelancers([]);
     router.push(ApplicationRoutes.HOME);
   };
@@ -1456,8 +1442,8 @@ const Page = () => {
                 <span className="text-[#18181B] font-medium">
                   ${paymentAmount}
                 </span>{' '}
-                for {selectedProject?.projectName || 'this project'}. Once
-                confirmed, the payment will be processed.
+                for {selectedJob?.name || 'this project'}. Once confirmed, the
+                payment will be processed.
               </span>
             </div>
 
@@ -1570,8 +1556,8 @@ const Page = () => {
             <div className="max-w-80">
               <p className="font-circular text-[#545756] text-base text-center mt-5">
                 Your payment of ${paymentAmount} has been successfully processed
-                for {selectedProject?.projectName || 'the project'}. The
-                freelancer will be notified of the payment.
+                for {selectedJob?.name || 'the project'}. The freelancer will be
+                notified of the payment.
               </p>
             </div>
 

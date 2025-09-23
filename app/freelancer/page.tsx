@@ -611,7 +611,9 @@ export default function Page() {
                 <CardContent>
                   <Flex direction={'row'} align={'center'} gap={'2'}>
                     <Button asChild className={'flex-1'} size={'lg'}>
-                      <Link href={ApplicationRoutes.FREELANCER_SUBMIT_PROPOSAL}>
+                      <Link
+                        href={`${ApplicationRoutes.FREELANCER_SUBMIT_PROPOSAL}?jobId=${selectedJob.jobid}`}
+                      >
                         Submit Proposal
                       </Link>
                     </Button>

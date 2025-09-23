@@ -137,25 +137,6 @@ const VIEW_FREELANCERS = `
   }
 `;
 
-// const VIEW_PROJECTS = `
-//   query ViewProjects {
-//     viewProjects {
-//       _id
-//       companyName
-//       createdAt
-//       description
-//       location
-//       maxAmount
-//       maxDuration
-//       minAmount
-//       minDuration
-//       projectName
-//       tags
-//       walletAddress
-//     }
-//   }
-// `;
-
 const GET_JOBS = `
   query GetJobs {
     GetJobs {
@@ -551,7 +532,7 @@ const Page = () => {
       (sum, job) => sum + (job.proposals?.length || 0),
       0,
     );
-    const activeProjects = jobs.filter((j) => j.status === 'active').length;
+    const activeJobs = jobs.filter((j) => j.status === 'active').length;
     const completedProjects = jobs.filter(
       (j) => j.status === 'completed',
     ).length;
@@ -565,8 +546,8 @@ const Page = () => {
         showSelect: false,
       },
       {
-        title: activeProjects.toString(),
-        description: 'Active Projects',
+        title: activeJobs.toString(),
+        description: 'Active Jobs',
         icon: <ProjectIcon />,
         showSelect: true,
       },
@@ -1166,7 +1147,7 @@ const Page = () => {
                     {hasJob && (
                       <div className="bg-white rounded-lg font-circular shadow-md min-h-52">
                         <div className="border-b border-gray-200 p-4 text-[#7E8082] font-medium text-lg">
-                          Active Projects
+                          Active Jobs
                         </div>
                         <div className="p-4">
                           <div>

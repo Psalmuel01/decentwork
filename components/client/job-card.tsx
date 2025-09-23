@@ -7,7 +7,7 @@ import {
   DialogContent,
   DialogTrigger,
 } from '../ui/dialog';
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import ProposalsList from './proposals-list';
 import FreelancCalendar from '@/icons/freelance/freelance-calendar';
 import LocationIcon from '@/icons/freelance/location-icon';
@@ -58,7 +58,6 @@ type PostJobCardComponentProps = {
   data: PostJobCardComponentType;
   // editJob: React.MutableRefObject<HTMLDivElement>;
   onSelectForPayment?: (project: object) => void;
-  getProposalCount?: (jobId: string) => number;
 };
 
 const PostJobCard = ({
@@ -74,22 +73,20 @@ const PostJobCard = ({
     timeline,
     createdAt,
     clientid,
-    proposals,
+    // proposals,
     // Legacy fields fallback
     detail,
     duration,
     funding,
-
     location,
     role,
     timePosted,
     freelancer_address,
-    proposalCount: initialProposalCount = 0,
-    token,
+    proposalCount,
+    // token,
   },
   // editJob,
   onSelectForPayment,
-  getProposalCount,
 }: PostJobCardComponentProps) => {
   // Use new fields with fallback to legacy fields
   const projectTitle = title || role || 'Untitled Project';
@@ -106,21 +103,8 @@ const PostJobCard = ({
   const showPaymentOption = jobStatus === 'in_progress' && freelancer_address;
   const viewProposalsRef = useRef<HTMLDivElement>(null);
   const [currentJobId, setCurrentJobId] = useState<string>(jobId);
-  const [proposalCount, setProposalCount] = useState<number>(
-    proposals?.length || initialProposalCount || 0,
-  );
   const [isVerifying, setIsVerifying] = useState(false);
   const [isVerified, setIsVerified] = useState(false);
-
-  // Update proposal count when getProposalCount is provided
-  useEffect(() => {
-    if (jobId && getProposalCount) {
-      const count = getProposalCount(jobId);
-      setProposalCount(count);
-    } else if (proposals) {
-      setProposalCount(proposals.length);
-    }
-  }, [jobId, getProposalCount, proposals]);
 
   const handlePayment = (e: React.MouseEvent) => {
     e.stopPropagation();

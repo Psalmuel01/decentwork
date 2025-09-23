@@ -540,10 +540,10 @@ const Page = () => {
   }, []);
 
   // Get proposal count for a job
-  const getProposalCount = (jobId: string): number => {
-    const job = jobs.find((j) => j.jobid === jobId);
-    return job?.proposals?.length || 0;
-  };
+  // const getProposalCount = (jobId: string): number => {
+  //   const job = jobs.find((j) => j.jobid === jobId);
+  //   return job?.proposals?.length || 0;
+  // };
 
   // Generate dashboard cards data
   const getDashboardCardsData = () => {
@@ -1127,12 +1127,12 @@ const Page = () => {
                               timeline: job.duration,
                               createdAt: job.createdAt,
                               token: job.token,
+                              proposalCount: job.proposalscount,
                             }}
                             // editJob={editJob}
                             onSelectForPayment={() =>
                               selectProjectForPayment(job)
                             }
-                            getProposalCount={getProposalCount}
                           />
                         ))}
                       </div>

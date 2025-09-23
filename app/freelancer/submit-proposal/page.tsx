@@ -202,6 +202,7 @@ function SubmitProposalContent() {
         });
 
         const result = await response.json();
+        console.log(result);
 
         if (result.errors) {
           console.error('GraphQL errors:', result.errors);

@@ -12,12 +12,26 @@ import ProposalsList from './proposals-list';
 import FreelancCalendar from '@/icons/freelance/freelance-calendar';
 import LocationIcon from '@/icons/freelance/location-icon';
 
+// API Configuration
+const API_URL = 'https://decentwork.onrender.com/graphql';
+
+// GraphQL Mutations
+const VERIFY_JOB = `
+  mutation VerifyJob($jobId: ID!) {
+    VerifyJob(jobId: $jobId) {
+      code
+      message
+      success
+    }
+  }
+`;
+
 export type PostJobCardComponentType = {
   id: string;
-  projectid?: string;
+  jobid?: string;
   title?: string;
   description?: string;
-  budget?: string;
+  budget?: number;
   status?: string;
   category?: string;
   skills?: string[];
@@ -33,24 +47,24 @@ export type PostJobCardComponentType = {
   location?: string;
   role?: string;
   timePosted?: string;
-  verified?: boolean;
   freelancer_address?: string;
   payment_status?: string;
   proposalCount?: number;
-  proposals?: any[];
+  proposals?: object[];
+  token?: string | null;
 };
 
 type PostJobCardComponentProps = {
   data: PostJobCardComponentType;
   // editJob: React.MutableRefObject<HTMLDivElement>;
   onSelectForPayment?: (project: object) => void;
-  getProposalCount?: (projectId: string) => number;
+  getProposalCount?: (jobId: string) => number;
 };
 
 const PostJobCard = ({
   data: {
     id,
-    projectid,
+    jobid,
     title,
     description,
     budget,
@@ -65,13 +79,13 @@ const PostJobCard = ({
     detail,
     duration,
     funding,
-    hourlyPay,
+
     location,
     role,
     timePosted,
-    verified = true,
     freelancer_address,
     proposalCount: initialProposalCount = 0,
+    token,
   },
   // editJob,
   onSelectForPayment,
@@ -83,40 +97,41 @@ const PostJobCard = ({
     description || detail || 'No description available';
   const projectBudget = budget || funding || '0';
   const projectDuration = timeline || duration || 'Not specified';
-  const projectStatus = status || 'open';
+  const jobStatus = status || 'open';
   const projectSkills = skills || [];
-  const projectId = projectid || id;
+  const jobId = jobid || id;
   const postedTime = createdAt || timePosted || 'Recently';
 
   // Check if the project has a freelancer assigned and is in progress
-  const showPaymentOption =
-    projectStatus === 'in_progress' && freelancer_address;
+  const showPaymentOption = jobStatus === 'in_progress' && freelancer_address;
   const viewProposalsRef = useRef<HTMLDivElement>(null);
-  const [currentProjectId, setCurrentProjectId] = useState<string>(projectId);
+  const [currentJobId, setCurrentJobId] = useState<string>(jobId);
   const [proposalCount, setProposalCount] = useState<number>(
     proposals?.length || initialProposalCount || 0,
   );
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [isVerified, setIsVerified] = useState(false);
 
   // Update proposal count when getProposalCount is provided
   useEffect(() => {
-    if (projectId && getProposalCount) {
-      const count = getProposalCount(projectId);
+    if (jobId && getProposalCount) {
+      const count = getProposalCount(jobId);
       setProposalCount(count);
     } else if (proposals) {
       setProposalCount(proposals.length);
     }
-  }, [projectId, getProposalCount, proposals]);
+  }, [jobId, getProposalCount, proposals]);
 
   const handlePayment = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (onSelectForPayment) {
       onSelectForPayment({
-        projectid: projectId,
-        id: projectId,
+        jobid: jobId,
+        id: jobId,
         title: projectTitle,
-        budget: projectBudget.replace(/[^0-9.]/g, ''), // Extract numeric value
+        budget: projectBudget, // Extract numeric value
         freelancer_address,
-        status: projectStatus,
+        status: jobStatus,
       });
     }
   };
@@ -155,12 +170,56 @@ const PostJobCard = ({
         return { label: 'Completed', class: 'bg-gray-100 text-gray-700' };
       case 'closed':
         return { label: 'Closed', class: 'bg-red-100 text-red-700' };
+      case 'inactive':
+        return { label: 'Inactive', class: 'bg-yellow-100 text-yellow-700' };
       default:
         return { label: 'Open', class: 'bg-blue-100 text-blue-700' };
     }
   };
 
-  const statusDisplay = getStatusDisplay(projectStatus);
+  const statusDisplay = getStatusDisplay(jobStatus);
+
+  const handleVerifyJob = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsVerifying(true);
+
+    try {
+      const token = localStorage.getItem('authToken');
+
+      const response = await fetch(API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          query: VERIFY_JOB,
+          variables: {
+            jobId: jobId,
+          },
+        }),
+      });
+
+      const result = await response.json();
+
+      if (result.errors) {
+        console.error('GraphQL errors:', result.errors);
+        return;
+      }
+
+      if (result.data?.VerifyJob?.success) {
+        setIsVerified(true);
+        // Optionally show success message
+        console.log('Job verified successfully');
+      } else {
+        console.error('Failed to verify job:', result.data?.VerifyJob?.message);
+      }
+    } catch (error) {
+      console.error('Error verifying job:', error);
+    } finally {
+      setIsVerifying(false);
+    }
+  };
 
   return (
     <>
@@ -206,11 +265,11 @@ const PostJobCard = ({
               </Button>
             )}
 
-            {(projectStatus === 'open' || projectStatus === 'active') && (
+            {(jobStatus === 'open' || jobStatus === 'active') && (
               <Button
                 onClick={(e) => {
                   e.stopPropagation();
-                  setCurrentProjectId(projectId);
+                  setCurrentJobId(jobId);
                   viewProposalsRef.current?.click();
                 }}
                 size="sm"
@@ -218,6 +277,38 @@ const PostJobCard = ({
               >
                 View Proposals {proposalCount > 0 ? `(${proposalCount})` : ''}
               </Button>
+            )}
+
+            {!isVerified ? (
+              <Button
+                onClick={handleVerifyJob}
+                disabled={isVerifying}
+                size="sm"
+                className="bg-blue-500 hover:bg-blue-600 text-white"
+              >
+                {isVerifying ? 'Verifying...' : 'Verify Job'}
+              </Button>
+            ) : (
+              <div className="flex items-center space-x-1 px-3 py-1 bg-green-50 rounded-full">
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 14 14"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M11.6667 3.5L5.25 9.91667L2.33333 7"
+                    stroke="#10B981"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+                <span className="text-green-700 text-sm font-medium">
+                  Verified
+                </span>
+              </div>
             )}
 
             <svg
@@ -309,20 +400,20 @@ const PostJobCard = ({
                 cx="8"
                 cy="8"
                 r="6"
-                stroke={verified ? '#1A73E8' : '#FF5733'}
-                fill={verified ? '#1A73E8' : '#FF5733'}
+                stroke={isVerified ? '#1A73E8' : '#FF5733'}
+                fill={isVerified ? '#1A73E8' : '#FF5733'}
                 opacity="0.1"
               />
               <circle
                 cx="8"
                 cy="8"
                 r="3.5"
-                stroke={verified ? '#1A73E8' : '#FF5733'}
-                fill={verified ? '#1A73E8' : '#FF5733'}
+                stroke={isVerified ? '#1A73E8' : '#FF5733'}
+                fill={isVerified ? '#1A73E8' : '#FF5733'}
               />
             </svg>
             <p className="text-sm font-normal text-[#7E8082]">
-              Budget {verified ? 'verified' : 'not verified'}
+              Job {isVerified ? 'verified' : 'not verified'}
             </p>
           </div>
 
@@ -357,7 +448,7 @@ const PostJobCard = ({
           <div className="mt-1 ml-1">
             <div className="flex items-center space-x-1">
               <p className="text-sm font-normal text-[#7E8082]">Project ID:</p>
-              <p className="text-[#545756] font-mono text-xs">#{projectId}</p>
+              <p className="text-[#545756] font-mono text-xs">#{jobId}</p>
             </div>
           </div>
         )}
@@ -378,7 +469,7 @@ const PostJobCard = ({
                   Proposals for: {projectTitle}
                 </h3>
                 <p className="text-sm text-gray-600 mt-1">
-                  Project ID: #{projectId}
+                  Project ID: #{jobId}
                 </p>
               </div>
               <span
@@ -401,9 +492,9 @@ const PostJobCard = ({
               </div>
             )}
 
-            {currentProjectId && (
+            {currentJobId && (
               <ProposalsList
-                jobId={parseInt(currentProjectId)}
+                jobId={parseInt(currentJobId)}
                 onProposalAccepted={() => {
                   // Close the dialog and refresh the page after proposal is accepted
                   const closeButton = document.querySelector(

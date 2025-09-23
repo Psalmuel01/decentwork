@@ -438,7 +438,7 @@ export default function Page() {
             mutation UpdateFreelancerProfile(
               $address: String,
               $bio: String,
-              $category: String,
+              $category: Category,
               $city: String,
               $country: String,
               $dateOfBirth: String,
@@ -502,7 +502,7 @@ export default function Page() {
             mutation CreateFreelancer(
               $address: String!,
               $bio: String!,
-              $category: String!,
+              $category: Category!,
               $city: String!,
               $country: String!,
               $dateOfBirth: String!,
@@ -1102,23 +1102,29 @@ export default function Page() {
                                   </SelectTrigger>
                                 </FormControl>
                                 <SelectContent>
-                                  <SelectItem value="development">
-                                    Development & IT
+                                  <SelectItem value="BLOCKCHAIN">
+                                    Blockchain
                                   </SelectItem>
-                                  <SelectItem value="design">
-                                    Design & Creative
+                                  <SelectItem value="CONTENT_WRITING">
+                                    Content Writing
                                   </SelectItem>
-                                  <SelectItem value="marketing">
-                                    Sales & Marketing
+                                  <SelectItem value="DATA_SCIENCE">
+                                    Data Science
                                   </SelectItem>
-                                  <SelectItem value="writing">
-                                    Writing & Translation
+                                  <SelectItem value="DIGITAL_MARKETING">
+                                    Digital Marketing
                                   </SelectItem>
-                                  <SelectItem value="admin">
-                                    Admin & Customer Support
+                                  <SelectItem value="GRAPHIC_DESIGN">
+                                    Graphic Design
                                   </SelectItem>
-                                  <SelectItem value="engineering">
-                                    Engineering & Architecture
+                                  <SelectItem value="MOBILE_DEVELOPMENT">
+                                    Mobile Development
+                                  </SelectItem>
+                                  <SelectItem value="VIRTUAL_ASSISTANCE">
+                                    Virtual Assistance
+                                  </SelectItem>
+                                  <SelectItem value="WEB_DEVELOPMENT">
+                                    Web Development
                                   </SelectItem>
                                 </SelectContent>
                               </Select>

@@ -34,8 +34,20 @@ import {
   Dialog,
   DialogClose,
   DialogContent,
+  DialogHeader,
+  DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import ApplySuccess from '@/icons/freelance/apply-success';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import Image from 'next/image';
@@ -71,6 +83,27 @@ const GET_CLIENT_DETAILS = `
       }
       message
       success
+    }
+  }
+`;
+
+const CREATE_JOB = `
+  mutation CreateJob($budget: Float!, $category: Category!, $description: String!, $duration: String!, $name: String!, $skills: [String!]!) {
+    createJob(budget: $budget, category: $category, description: $description, duration: $duration, name: $name, skills: $skills) {
+      _id
+      amount
+      budget
+      category
+      clientWalletAddress
+      clientid
+      createdAt
+      description
+      duration
+      jobid
+      name
+      skills
+      status
+      token
     }
   }
 `;
@@ -123,6 +156,42 @@ const VIEW_PROJECTS = `
   }
 `;
 
+const GET_JOBS = `
+  query GetJobs {
+    GetJobs {
+      code
+      jobdDetails {
+        _id
+        amount
+        budget
+        category
+        clientWalletAddress
+        clientid
+        createdAt
+        description
+        duration
+        jobid
+        name
+        proposals {
+          bidAmount
+          clientWalletAddress
+          coverLetter
+          createdAt
+          deliveryTime
+          freelancerWalletAddress
+          proposalId
+          status
+        }
+        proposalscount
+        skills
+        status
+        token
+      }
+      message
+      success
+    }
+  }`;
+
 // Interfaces
 interface ClientData {
   address: string;
@@ -159,6 +228,24 @@ interface ProjectData {
   proposals?: ProposalData[];
 }
 
+interface JobData {
+  amount: string;
+  budget: number;
+  category: string;
+  clientWalletAddress: string;
+  clientid: string;
+  createdAt: string;
+  description: string;
+  duration: string;
+  jobid: string;
+  name: string;
+  proposals: ProposalData2[];
+  proposalscount: number;
+  skills: string[];
+  status: string;
+  token: string;
+}
+
 interface ProposalData {
   proposalid: string;
   freelancerid: string;
@@ -167,6 +254,17 @@ interface ProposalData {
   timeline: string;
   status: string;
   createdAt: string;
+}
+
+interface ProposalData2 {
+  bidAmount: number;
+  clientWalletAddress: string;
+  coverLetter: string;
+  createdAt: string;
+  deliveryTime: number;
+  freelancerWalletAddress: string;
+  proposalId: string;
+  status: 'accepted' | 'declined' | 'pending';
 }
 
 interface FreelancerData {
@@ -249,16 +347,33 @@ const Page = () => {
   // State management
   const [clientData, setClientData] = useState<ClientData | null>(null);
   const [projects, setProjects] = useState<ProjectData[]>([]);
+  const [jobs, setJobs] = useState<JobData[]>([]);
   const [freelancers, setFreelancers] = useState<FreelancerData[]>([]);
   const [selectedProject, setSelectedProject] = useState<ProjectData | null>(
     null,
   );
+  const [selectedJob, setSelectedJob] = useState<JobData | null>(null);
   const [isLoadingProjects, setIsLoadingProjects] = useState(false);
+  const [isLoadingJobs, setIsLoadingJobs] = useState(false);
   const [isLoadingFreelancers, setIsLoadingFreelancers] = useState(false);
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   const [txError, setTxError] = useState<string | null>(null);
   const [paymentAmount, setPaymentAmount] = useState<string>('0');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  // Create Job Modal State
+  const [isCreateJobOpen, setIsCreateJobOpen] = useState(false);
+  const [isCreatingJob, setIsCreatingJob] = useState(false);
+  const [createJobError, setCreateJobError] = useState<string | null>(null);
+  const [jobFormData, setJobFormData] = useState({
+    name: '',
+    description: '',
+    budget: '',
+    duration: '',
+    category: '',
+    skills: [] as string[],
+  });
+  const [skillInput, setSkillInput] = useState('');
 
   // Check authentication
   useEffect(() => {
@@ -375,6 +490,43 @@ const Page = () => {
     }
   };
 
+  const fetchJobs = async () => {
+    const token = localStorage.getItem('authToken');
+    if (!token) {
+      console.log('No auth token found');
+      return null;
+    }
+    setIsLoadingJobs(true);
+    try {
+      const response = await fetch(API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          query: GET_JOBS,
+        }),
+      });
+
+      const result = await response.json();
+      if (result.errors) {
+        console.error('GraphQL errors:', result.errors);
+        return;
+      }
+
+      const jobsData = result.data?.GetJobs?.jobdDetails;
+      console.log(jobsData);
+      if (jobsData && Array.isArray(jobsData)) {
+        setJobs(jobsData);
+      }
+    } catch (error) {
+      console.error('Error fetching jobs:', error);
+    } finally {
+      setIsLoadingJobs(false);
+    }
+  };
+
   // Initialize data and handle routing
   useEffect(() => {
     const handleInitialization = async () => {
@@ -386,6 +538,7 @@ const Page = () => {
       if (clientDetails) {
         // Client profile exists, stay on dashboard
         await fetchProjects();
+        await fetchJobs();
         await fetchFreelancers();
       } else if (isNewClientUser) {
         // No profile exists but user is marked as new client, route to setup
@@ -432,8 +585,8 @@ const Page = () => {
         showSelect: true,
       },
       {
-        title: projects.length.toString(),
-        description: 'Projects Posted',
+        title: jobs.length.toString(),
+        description: 'Jobs Posted',
         icon: <WalletIcon />,
         showSelect: true,
       },
@@ -452,10 +605,10 @@ const Page = () => {
     ];
   };
 
-  const selectProjectForPayment = (project: ProjectData) => {
-    setSelectedProject(project);
-    if (project.budget) {
-      setPaymentAmount(project.budget.toString());
+  const selectProjectForPayment = (job: JobData) => {
+    setSelectedJob(job);
+    if (job.budget) {
+      setPaymentAmount(job.budget.toString());
     }
     if (confirmPayment.current) {
       confirmPayment.current.click();
@@ -463,8 +616,8 @@ const Page = () => {
   };
 
   const handleSendPayment = async () => {
-    if (!selectedProject || !isAuthenticated) {
-      setTxError('Please log in and select a project first');
+    if (!selectedJob || !isAuthenticated) {
+      setTxError('Please log in and select a job first');
       return;
     }
 
@@ -485,7 +638,7 @@ const Page = () => {
       }
 
       // Refresh projects data
-      await fetchProjects();
+      await fetchJobs();
     } catch (err) {
       console.error('Error sending payment:', err);
       setTxError(
@@ -528,6 +681,110 @@ const Page = () => {
     setProjects([]);
     setFreelancers([]);
     router.push(ApplicationRoutes.HOME);
+  };
+
+  const handleCreateJob = async () => {
+    if (!isAuthenticated) {
+      setCreateJobError('Please log in to create a job');
+      return;
+    }
+
+    if (
+      !jobFormData.name ||
+      !jobFormData.description ||
+      !jobFormData.budget ||
+      !jobFormData.duration ||
+      !jobFormData.category ||
+      jobFormData.skills.length === 0
+    ) {
+      setCreateJobError('Please fill in all required fields');
+      return;
+    }
+
+    setIsCreatingJob(true);
+    setCreateJobError(null);
+
+    try {
+      const token = localStorage.getItem('authToken');
+      const skillsArray = jobFormData.skills;
+
+      const response = await fetch(API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          query: CREATE_JOB,
+          variables: {
+            name: jobFormData.name,
+            description: jobFormData.description,
+            budget: parseFloat(jobFormData.budget),
+            duration: jobFormData.duration,
+            category: jobFormData.category,
+            skills: skillsArray,
+          },
+        }),
+      });
+
+      console.log(jobFormData);
+      const result = await response.json();
+      console.log(result);
+
+      if (result.errors) {
+        console.error('GraphQL errors:', result.errors);
+        setCreateJobError(result.errors[0]?.message || 'Failed to create job');
+        return;
+      }
+
+      if (result.data?.createJob) {
+        // Reset form
+        setJobFormData({
+          name: '',
+          description: '',
+          budget: '',
+          duration: '',
+          category: '',
+          skills: [],
+        });
+        setSkillInput('');
+
+        // Close modal
+        setIsCreateJobOpen(false);
+
+        // Refresh projects
+        await fetchProjects();
+      } else {
+        setCreateJobError('Failed to create job');
+      }
+    } catch (error) {
+      console.error('Error creating job:', error);
+      setCreateJobError(
+        error instanceof Error ? error.message : 'Failed to create job',
+      );
+    } finally {
+      setIsCreatingJob(false);
+    }
+  };
+
+  const handleJobFormChange = (field: string, value: string | string[]) => {
+    setJobFormData((prev) => ({ ...prev, [field]: value }));
+    if (createJobError) setCreateJobError(null);
+  };
+
+  const addSkill = () => {
+    const skill = skillInput.trim();
+    if (skill && !jobFormData.skills.includes(skill)) {
+      handleJobFormChange('skills', [...jobFormData.skills, skill]);
+      setSkillInput('');
+    }
+  };
+
+  const removeSkill = (skillToRemove: string) => {
+    handleJobFormChange(
+      'skills',
+      jobFormData.skills.filter((skill) => skill !== skillToRemove),
+    );
   };
 
   if (!isAuthenticated) {
@@ -608,14 +865,226 @@ const Page = () => {
                 </div>
               )}
 
-              <Link href={ApplicationRoutes.POST_A_JOB}>
-                <Button className="flex items-center text-white space-x-2">
-                  <LucidePlus size={20} />
-                  <p className="font-circular font-medium text-sm">
-                    Post a project
-                  </p>
-                </Button>
-              </Link>
+              <Dialog open={isCreateJobOpen} onOpenChange={setIsCreateJobOpen}>
+                <DialogTrigger asChild>
+                  <Button className="flex items-center text-white space-x-2">
+                    <LucidePlus size={20} />
+                    <p className="font-circular font-medium text-sm">
+                      Create a job
+                    </p>
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-[500px] bg-white font-circular max-h-[90vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle className="text-xl font-semibold text-[#18181B]">
+                      Create New Job
+                    </DialogTitle>
+                  </DialogHeader>
+
+                  <div className="space-y-4 py-4">
+                    <div className="space-y-2">
+                      <Label
+                        htmlFor="job-name"
+                        className="text-sm font-medium text-gray-700"
+                      >
+                        Job Title *
+                      </Label>
+                      <Input
+                        id="job-name"
+                        value={jobFormData.name}
+                        onChange={(e) =>
+                          handleJobFormChange('name', e.target.value)
+                        }
+                        placeholder="Enter job title"
+                        className="w-full"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label
+                        htmlFor="job-description"
+                        className="text-sm font-medium text-gray-700"
+                      >
+                        Description *
+                      </Label>
+                      <Textarea
+                        id="job-description"
+                        value={jobFormData.description}
+                        onChange={(e) =>
+                          handleJobFormChange('description', e.target.value)
+                        }
+                        placeholder="Describe your project requirements..."
+                        rows={4}
+                        className="w-full"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label
+                          htmlFor="job-budget"
+                          className="text-sm font-medium text-gray-700"
+                        >
+                          Budget (USD) *
+                        </Label>
+                        <Input
+                          id="job-budget"
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={jobFormData.budget}
+                          onChange={(e) =>
+                            handleJobFormChange('budget', e.target.value)
+                          }
+                          placeholder="0.00"
+                          className="w-full"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label
+                          htmlFor="job-duration"
+                          className="text-sm font-medium text-gray-700"
+                        >
+                          Duration *
+                        </Label>
+                        <Input
+                          id="job-duration"
+                          value={jobFormData.duration}
+                          onChange={(e) =>
+                            handleJobFormChange('duration', e.target.value)
+                          }
+                          placeholder="e.g., 2 weeks, 1 month"
+                          className="w-full"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label
+                        htmlFor="job-category"
+                        className="text-sm font-medium text-gray-700"
+                      >
+                        Category *
+                      </Label>
+                      <Select
+                        value={jobFormData.category}
+                        onValueChange={(value) =>
+                          handleJobFormChange('category', value)
+                        }
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Select a category" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="BLOCKCHAIN">Blockchain</SelectItem>
+                          <SelectItem value="CONTENT_WRITING">
+                            Content Writing
+                          </SelectItem>
+                          <SelectItem value="DATA_SCIENCE">
+                            Data Science
+                          </SelectItem>
+                          <SelectItem value="DIGITAL_MARKETING">
+                            Digital Marketing
+                          </SelectItem>
+                          <SelectItem value="GRAPHIC_DESIGN">
+                            Graphic Design
+                          </SelectItem>
+                          <SelectItem value="MOBILE_DEVELOPMENT">
+                            Mobile Development
+                          </SelectItem>
+                          <SelectItem value="VIRTUAL_ASSISTANCE">
+                            Virtual Assistance
+                          </SelectItem>
+                          <SelectItem value="WEB_DEVELOPMENT">
+                            Web Development
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label
+                        htmlFor="job-skills"
+                        className="text-sm font-medium text-gray-700"
+                      >
+                        Required Skills *
+                      </Label>
+                      <div className="space-y-2">
+                        <div className="flex gap-2">
+                          <Input
+                            id="job-skills"
+                            value={skillInput}
+                            onChange={(e) => setSkillInput(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault();
+                                addSkill();
+                              }
+                            }}
+                            placeholder="Add a skill (e.g., React, Node.js)"
+                            className="flex-1"
+                          />
+                          <Button
+                            type="button"
+                            onClick={addSkill}
+                            variant="outline"
+                            className="px-6"
+                          >
+                            Add
+                          </Button>
+                        </div>
+                        {jobFormData.skills.length > 0 && (
+                          <div className="flex flex-wrap gap-2 mt-2">
+                            {jobFormData.skills.map((skill, index) => (
+                              <div
+                                key={index}
+                                className="bg-primary/10 text-primary px-3 py-1 rounded-full text-sm flex items-center gap-2"
+                              >
+                                {skill}
+                                <button
+                                  type="button"
+                                  onClick={() => removeSkill(skill)}
+                                  className="text-primary hover:text-primary/80"
+                                >
+                                  ×
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                      <p className="text-xs text-gray-500">
+                        Press Enter or click Add to add skills
+                      </p>
+                    </div>
+
+                    {createJobError && (
+                      <div className="p-3 bg-red-50 border border-red-200 rounded-md">
+                        <p className="text-red-800 text-sm">{createJobError}</p>
+                      </div>
+                    )}
+
+                    <div className="flex space-x-3 pt-4">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => setIsCreateJobOpen(false)}
+                        className="flex-1"
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        onClick={handleCreateJob}
+                        disabled={isCreatingJob}
+                        className="flex-1 bg-primary text-white hover:bg-primary/90"
+                      >
+                        {isCreatingJob ? 'Creating...' : 'Create Job'}
+                      </Button>
+                    </div>
+                  </div>
+                </DialogContent>
+              </Dialog>
 
               <Button
                 variant="destructive"
@@ -637,7 +1106,7 @@ const Page = () => {
           <div className="flex flex-row justify-between gap-x-4">
             <Tabs defaultValue="overview">
               <TabsList>
-                <TabsTrigger value="overview">Projects</TabsTrigger>
+                <TabsTrigger value="overview">Jobs</TabsTrigger>
                 <TabsTrigger value="bounties">Bounties</TabsTrigger>
                 <TabsTrigger value="proposals">Proposals</TabsTrigger>
                 <TabsTrigger value="completed">Completed Jobs</TabsTrigger>
@@ -647,32 +1116,33 @@ const Page = () => {
                 <div className="grid grid-cols-12 gap-x-3">
                   <div className="bg-white shadow-md h-[90vh] overflow-hidden rounded-lg col-span-8 p-6 px-8">
                     <div className="border-b border-gray-200 p-4 text-[#7E8082] font-medium text-lg">
-                      Project Overview
+                      Job Overview
                     </div>
 
-                    {isLoadingProjects ? (
+                    {isLoadingJobs ? (
                       <div className="flex items-center justify-center py-10">
-                        <p className="text-gray-500">Loading projects...</p>
+                        <p className="text-gray-500">Loading jobs...</p>
                       </div>
-                    ) : projects && projects.length > 0 ? (
+                    ) : jobs && jobs.length > 0 ? (
                       <div className="divide-y divide-gray-300 flex flex-col gap-y-10 pt-8 h-[70vh] overflow-y-auto custom-scrollbar pb-20">
-                        {projects.map((project, index) => (
+                        {jobs.map((job, index) => (
                           <PostJobCard
-                            key={`project-${index}-${project.projectid}`}
+                            key={`job-${index}-${job.jobid}`}
                             data={{
-                              id: project.projectid,
-                              title: project.projectName,
-                              description: project.description,
-                              budget: project.budget,
-                              status: project.status,
-                              category: project.category,
-                              skills: project.skills,
-                              timeline: project.timeline,
-                              createdAt: project.createdAt,
+                              id: job.jobid,
+                              title: job.name,
+                              description: job.description,
+                              budget: job.budget,
+                              status: job.status,
+                              category: job.category,
+                              skills: job.skills,
+                              timeline: job.duration,
+                              createdAt: job.createdAt,
+                              token: job.token,
                             }}
                             // editJob={editJob}
                             onSelectForPayment={() =>
-                              selectProjectForPayment(project)
+                              selectProjectForPayment(job)
                             }
                             getProposalCount={getProposalCount}
                           />
@@ -682,16 +1152,15 @@ const Page = () => {
                       <div className="pt-20 flex flex-col items-center font-circular">
                         <NoPostIcon className="scale-90" />
                         <p className="text-[#545756] my-9">
-                          No active projects found. Try posting a new project!
+                          No active jobs found. Try creating a new job!
                         </p>
-                        <Link href={ApplicationRoutes.POST_A_JOB}>
-                          <Button className="flex items-center text-primary bg-white space-x-3 border border-primary rounded-md hover:bg-white focus:bg-white">
-                            <LucidePlus size={20} />
-                            <p className="font-medium text-base">
-                              Post a project
-                            </p>
-                          </Button>
-                        </Link>
+                        <Button
+                          onClick={() => setIsCreateJobOpen(true)}
+                          className="flex items-center text-primary bg-white space-x-3 border border-primary rounded-md hover:bg-white focus:bg-white"
+                        >
+                          <LucidePlus size={20} />
+                          <p className="font-medium text-base">Create a Job</p>
+                        </Button>
                       </div>
                     )}
                   </div>
@@ -838,7 +1307,7 @@ const Page = () => {
                       Available Bounties
                     </div>
 
-                    {isLoadingProjects ? (
+                    {/*{isLoadingProjects ? (
                       <div className="flex items-center justify-center py-10">
                         <p className="text-gray-500">Loading bounties...</p>
                       </div>
@@ -866,7 +1335,7 @@ const Page = () => {
                               }
                               getProposalCount={getProposalCount}
                             />
-                          ))}
+                          ))}*/}
                       </div>
                     ) : (
                       <div className="pt-20 flex flex-col items-center font-circular">
@@ -874,14 +1343,13 @@ const Page = () => {
                         <p className="text-[#545756] my-9">
                           No active bounties found. Try posting a new bounty!
                         </p>
-                        <Link href={ApplicationRoutes.POST_A_JOB}>
-                          <Button className="flex items-center text-primary bg-white space-x-3 border border-primary rounded-md hover:bg-white focus:bg-white">
-                            <LucidePlus size={19} />
-                            <p className="font-medium text-base">
-                              Post a Bounty
-                            </p>
-                          </Button>
-                        </Link>
+                        <Button
+                          onClick={() => setIsCreateJobOpen(true)}
+                          className="flex items-center text-primary bg-white space-x-3 border border-primary rounded-md hover:bg-white focus:bg-white"
+                        >
+                          <LucidePlus size={19} />
+                          <p className="font-medium text-base">Post a Bounty</p>
+                        </Button>
                       </div>
                     )}
                   </div>

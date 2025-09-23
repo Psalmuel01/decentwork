@@ -11,7 +11,6 @@ import {
   DialogContent,
   DialogTrigger,
 } from '../ui/dialog';
-import { useXionWallet } from '@/context/xion-context';
 import { Input } from '@/components/ui/input';
 
 interface ProposalListProps {
@@ -33,7 +32,7 @@ interface Proposal {
 
 const ProposalsList = ({ jobId, onProposalAccepted }: ProposalListProps) => {
   const { getJobProposals, acceptProposal, getClientJobs } = useClient();
-  const { isConnected } = useXionWallet();
+  // const { isConnected } = useXionWallet();
   const [proposals, setProposals] = useState<Proposal[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -46,14 +45,14 @@ const ProposalsList = ({ jobId, onProposalAccepted }: ProposalListProps) => {
   useEffect(() => {
     fetchProposals();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [jobId, isConnected]);
+  }, [jobId]);
 
   const fetchProposals = async () => {
-    if (!isConnected) {
-      setError('Please connect your wallet to view proposals');
-      setLoading(false);
-      return;
-    }
+    // if (!isConnected) {
+    //   setError('Please connect your wallet to view proposals');
+    //   setLoading(false);
+    //   return;
+    // }
 
     try {
       setLoading(true);
@@ -141,15 +140,15 @@ const ProposalsList = ({ jobId, onProposalAccepted }: ProposalListProps) => {
     );
   });
 
-  if (!isConnected) {
-    return (
-      <Alert variant="default" className="mb-4">
-        <AlertDescription>
-          Please connect your wallet to view job proposals
-        </AlertDescription>
-      </Alert>
-    );
-  }
+  // if (!isConnected) {
+  //   return (
+  //     <Alert variant="default" className="mb-4">
+  //       <AlertDescription>
+  //         Please connect your wallet to view job proposals
+  //       </AlertDescription>
+  //     </Alert>
+  //   );
+  // }
 
   if (loading) {
     return (

@@ -5,7 +5,6 @@ import { Box, Flex, Grid, Heading, Separator, Text } from '@radix-ui/themes';
 import {
   Card,
   CardContent,
-  CardDescription,
   CardFooter,
   CardHeader,
   CardTitle,
@@ -58,24 +57,60 @@ const GET_FREELANCER_DETAILS = `
   }
 `;
 
-const VIEW_PROJECTS = `
-  query ViewProjects {
-    viewProjects {
-      _id
-      companyName
-      createdAt
-      description
-      location
-      maxAmount
-      maxDuration
-      minAmount
-      minDuration
-      projectName
-      tags
-      walletAddress
+// const VIEW_PROJECTS = `
+//   query ViewProjects {
+//     viewProjects {
+//       _id
+//       companyName
+//       createdAt
+//       description
+//       location
+//       maxAmount
+//       maxDuration
+//       minAmount
+//       minDuration
+//       projectName
+//       tags
+//       walletAddress
+//     }
+//   }
+// `;
+
+const GET_FEATURED_JOBS = `
+  query GetFeaturedJobs {
+    getFeaturedJobs {
+      code
+      jobdDetails {
+        _id
+        amount
+        budget
+        category
+        clientWalletAddress
+        clientid
+        createdAt
+        description
+        duration
+        jobid
+        name
+        proposals {
+          bidAmount
+          clientWalletAddress
+          coverLetter
+          createdAt
+          deliveryTime
+          freelancerWalletAddress
+          proposalId
+          status
+        }
+        proposalscount
+        skills
+        status
+        token
+      }
+      message
+      success
     }
-  }
-`;
+  }`;
 
 export interface FreelancerData {
   address: string;
@@ -102,43 +137,73 @@ export interface FreelancerData {
   walletAddress: string;
 }
 
-export interface ProjectData {
-  _id: string;
-  companyName: string;
+// export interface ProjectData {
+//   _id: string;
+//   companyName: string;
+//   createdAt: string;
+//   description: string;
+//   location: string;
+//   maxAmount: number;
+//   maxDuration: number;
+//   minAmount: number;
+//   minDuration: number;
+//   projectName: string;
+//   tags: string[];
+//   walletAddress: string;
+// }
+
+interface ProposalData {
+  bidAmount: number;
+  clientWalletAddress: string;
+  coverLetter: string;
+  createdAt: string;
+  deliveryTime: number;
+  freelancerWalletAddress: string;
+  proposalId: string;
+  status: 'accepted' | 'declined' | 'pending';
+}
+
+interface JobData {
+  amount: string;
+  budget: number;
+  category: string;
+  clientWalletAddress: string;
+  clientid: string;
   createdAt: string;
   description: string;
-  location: string;
-  maxAmount: number;
-  maxDuration: number;
-  minAmount: number;
-  minDuration: number;
-  projectName: string;
-  tags: string[];
-  walletAddress: string;
+  duration: string;
+  jobid: string;
+  name: string;
+  proposals: ProposalData[];
+  proposalscount: number;
+  skills: string[];
+  status: string;
+  token: string;
 }
 
 function JobCard({
-  project,
+  job,
   onClick,
   isSelected,
 }: {
-  project: ProjectData;
+  // project: ProjectData;
+  job: JobData;
   onClick: () => void;
   isSelected: boolean;
 }) {
-  const formatDuration = (minDuration: number, maxDuration: number) => {
-    if (minDuration === maxDuration) {
-      return `${minDuration} week${minDuration > 1 ? 's' : ''}`;
-    }
-    return `${minDuration} to ${maxDuration} weeks`;
-  };
+  // const formatDuration = (minDuration: number, maxDuration: number) => {
+  //   if (minDuration === maxDuration) {
+  //     return `${minDuration} week${minDuration > 1 ? 's' : ''}`;
+  //   }
+  //   return `${minDuration} to ${maxDuration} weeks`;
+  // };
 
-  const formatBudget = (minAmount: number, maxAmount: number) => {
-    if (minAmount === maxAmount) {
-      return `$${minAmount}`;
-    }
-    return `$${minAmount} - $${maxAmount}`;
-  };
+  // const formatBudget = (minAmount: number, maxAmount: number) => {
+  //   if (minAmount === maxAmount) {
+  //     return `$${minAmount}`;
+  //   }
+  //   return `$${minAmount} - $${maxAmount}`;
+  // };
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -171,12 +236,10 @@ function JobCard({
             className="rounded-full"
           />
           <Flex direction={'column'} className={''}>
-            <CardTitle className="line-clamp-1">
-              {project.projectName}
-            </CardTitle>
-            <CardDescription className={'leading-normal'}>
-              {project.companyName} • {project.location}
-            </CardDescription>
+            <CardTitle className="line-clamp-1">{job.name}</CardTitle>
+            {/*<CardDescription className={'leading-normal'}>
+              {job.companyName} • {project.location}
+            </CardDescription>*/}
           </Flex>
         </Flex>
       </CardHeader>
@@ -184,41 +247,43 @@ function JobCard({
         <Flex align={'center'} justify={'start'} gap={'2'}>
           <Text size={'2'}>
             <Text color={'gray'}>Budget: </Text>
-            <Text>{formatBudget(project.minAmount, project.maxAmount)}</Text>
+            <Text>{job.amount}</Text>
+            {/*<Text>{formatBudget(job.minAmount, project.maxAmount)}</Text>*/}
           </Text>
 
           <Text>-</Text>
 
           <Text size={'2'}>
             <Text color={'gray'}>Duration: </Text>
-            <Text>
+            <Text>{job.duration}</Text>
+            {/*<Text>
               {formatDuration(project.minDuration, project.maxDuration)}
-            </Text>
+            </Text>*/}
           </Text>
         </Flex>
         <Flex align={'center'} justify={'start'}>
           <Text>
             <Text size={'2'} className="line-clamp-3">
-              {project.description}
+              {job.description}
             </Text>
           </Text>
         </Flex>
         <div className="flex flex-wrap gap-2 pt-2">
-          {project.tags.slice(0, 3).map((tag, index) => (
+          {job.skills.slice(0, 3).map((skill, index) => (
             <Badge
               key={index}
               variant="secondary"
               className="px-3 py-1.5 rounded-full text-xs text-muted-foreground border-border"
             >
-              {tag}
+              {skill}
             </Badge>
           ))}
-          {project.tags.length > 3 && (
+          {job.skills.length > 3 && (
             <Badge
               variant="secondary"
               className="px-3 py-1.5 rounded-full text-xs text-muted-foreground border-border"
             >
-              +{project.tags.length - 3} more
+              +{job.skills.length - 3} more
             </Badge>
           )}
         </div>
@@ -234,14 +299,15 @@ function JobCard({
 
           <Text size={'2'}>
             <Text color={'gray'}>Budget: </Text>
-            <Text>{formatBudget(project.minAmount, project.maxAmount)}</Text>
+            <Text>{job.amount}</Text>
+            {/*<Text>{formatBudget(project.minAmount, project.maxAmount)}</Text>*/}
           </Text>
         </Flex>
         <Separator size={'4'} />
       </CardContent>
       <CardFooter className={'w-full justify-end'}>
         <Text align={'right'} size={'2'} color={'gray'}>
-          {formatDate(project.createdAt)}
+          {formatDate(job.createdAt)}
         </Text>
       </CardFooter>
     </Card>
@@ -254,43 +320,85 @@ export default function Page() {
   const [freelancerData, setFreelancerData] = useState<FreelancerData | null>(
     null,
   );
-  const [projects, setProjects] = useState<ProjectData[]>([]);
-  const [selectedProject, setSelectedProject] = useState<ProjectData | null>(
-    null,
-  );
-  const [isLoadingProjects, setIsLoadingProjects] = useState(false);
+  // const [projects, setProjects] = useState<ProjectData[]>([]);
+  const [jobs, setJobs] = useState<JobData[]>([]);
+  // const [selectedProject, setSelectedProject] = useState<ProjectData | null>(
+  //   null,
+  // );
+  const [selectedJob, setSelectedJob] = useState<JobData | null>(null);
+  // const [isLoadingProjects, setIsLoadingProjects] = useState(false);
+  const [isLoadingJobs, setIsLoadingJobs] = useState(false);
 
-  const fetchProjects = async () => {
-    setIsLoadingProjects(true);
+  // const fetchProjects = async () => {
+  //   setIsLoadingProjects(true);
+  //   try {
+  //     const response = await fetch(API_URL, {
+  //       method: 'POST',
+  //       headers: {
+  //         'Content-Type': 'application/json',
+  //       },
+  //       body: JSON.stringify({
+  //         query: VIEW_PROJECTS,
+  //       }),
+  //     });
+
+  //     const result = await response.json();
+
+  //     if (result.errors) {
+  //       console.error('GraphQL errors:', result.errors);
+  //       return;
+  //     }
+
+  //     const projectsData = result.data?.viewProjects;
+  //     if (projectsData && Array.isArray(projectsData)) {
+  //       setProjects(projectsData);
+  //       if (projectsData.length > 0) {
+  //         setSelectedProject(projectsData[0]);
+  //       }
+  //     }
+  //   } catch (error) {
+  //     console.error('Error fetching projects:', error);
+  //   } finally {
+  //     setIsLoadingProjects(false);
+  //   }
+  // };
+
+  const fetchJobs = async () => {
+    const token = localStorage.getItem('authToken');
+    if (!token) {
+      console.log('No auth token found');
+      return null;
+    }
+    setIsLoadingJobs(true);
     try {
       const response = await fetch(API_URL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          query: VIEW_PROJECTS,
+          query: GET_FEATURED_JOBS,
         }),
       });
 
       const result = await response.json();
-
       if (result.errors) {
         console.error('GraphQL errors:', result.errors);
         return;
       }
 
-      const projectsData = result.data?.viewProjects;
-      if (projectsData && Array.isArray(projectsData)) {
-        setProjects(projectsData);
-        if (projectsData.length > 0) {
-          setSelectedProject(projectsData[0]);
-        }
+      console.log({ result });
+
+      const jobsData = result.data?.getFeaturedJobs?.jobdDetails;
+      console.log(jobsData);
+      if (jobsData && Array.isArray(jobsData)) {
+        setJobs(jobsData);
       }
     } catch (error) {
-      console.error('Error fetching projects:', error);
+      console.error('Error fetching jobs:', error);
     } finally {
-      setIsLoadingProjects(false);
+      setIsLoadingJobs(false);
     }
   };
 
@@ -355,7 +463,8 @@ export default function Page() {
     };
 
     handleRouting();
-    fetchProjects();
+    fetchJobs();
+    // fetchProjects();
   }, [isNewFreelanceUser, router]);
 
   return (
@@ -400,32 +509,32 @@ export default function Page() {
 
         <Grid columns={'5'} gap={'4'}>
           <Flex className={'col-span-2'} direction={'column'} gap={'4'}>
-            {isLoadingProjects ? (
+            {isLoadingJobs ? (
               <div className="flex items-center justify-center py-8">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
               </div>
-            ) : projects.length === 0 ? (
+            ) : jobs.length === 0 ? (
               <Card className={'shadow-none border-0'}>
                 <CardContent className="py-8">
                   <Text color="gray" align="center">
-                    No projects available at the moment.
+                    No jobs available at the moment.
                   </Text>
                 </CardContent>
               </Card>
             ) : (
-              projects.map((project) => (
+              jobs.map((job) => (
                 <JobCard
-                  key={project._id}
-                  project={project}
-                  onClick={() => setSelectedProject(project)}
-                  isSelected={selectedProject?._id === project._id}
+                  key={job.jobid}
+                  job={job}
+                  onClick={() => setSelectedJob(job)}
+                  isSelected={selectedJob?.jobid === job.jobid}
                 />
               ))
             )}
           </Flex>
 
           <Box className={'col-span-3'}>
-            {selectedProject ? (
+            {selectedJob ? (
               <Card className={'border-0 shadow-none'}>
                 <CardHeader>
                   <Flex align={'center'} gap={'2'} className={''}>
@@ -437,11 +546,11 @@ export default function Page() {
                       className="rounded-full"
                     />
                     <Flex direction={'column'} className={''}>
-                      <CardTitle>{selectedProject.projectName}</CardTitle>
-                      <CardDescription className={'leading-normal'}>
-                        {selectedProject.companyName} •{' '}
-                        {selectedProject.location}
-                      </CardDescription>
+                      <CardTitle>{selectedJob.name}</CardTitle>
+                      {/*<CardDescription className={'leading-normal'}>
+                        {selectedJob.companyName} •{' '}
+                        {selectedJob.location}
+                      </CardDescription>*/}
                     </Flex>
                   </Flex>
                   <Flex
@@ -452,25 +561,27 @@ export default function Page() {
                   >
                     <Text size={'2'}>
                       <Text color={'gray'}>Budget: </Text>
-                      <Text>
+                      <Text>{selectedJob.amount}</Text>
+                      {/*<Text>
                         ${selectedProject.minAmount}
                         {selectedProject.minAmount !==
                           selectedProject.maxAmount &&
                           ` - $${selectedProject.maxAmount}`}
-                      </Text>
+                      </Text>*/}
                     </Text>
 
                     <Text>-</Text>
 
                     <Text size={'2'}>
                       <Text color={'gray'}>Duration: </Text>
-                      <Text>
+                      <Text>{selectedJob.duration}</Text>
+                      {/*<Text>
                         {selectedProject.minDuration}
                         {selectedProject.minDuration !==
                           selectedProject.maxDuration &&
                           ` - ${selectedProject.maxDuration}`}{' '}
                         week{selectedProject.maxDuration > 1 ? 's' : ''}
-                      </Text>
+                      </Text>*/}
                     </Text>
 
                     <Text>-</Text>
@@ -478,22 +589,20 @@ export default function Page() {
                     <Text size={'2'}>
                       <Text color={'gray'}>Posted: </Text>
                       <Text>
-                        {new Date(
-                          selectedProject.createdAt,
-                        ).toLocaleDateString()}
+                        {new Date(selectedJob.createdAt).toLocaleDateString()}
                       </Text>
                     </Text>
                   </Flex>
 
-                  {selectedProject.tags.length > 0 && (
+                  {selectedJob.skills.length > 0 && (
                     <div className="flex flex-wrap gap-2 mt-4">
-                      {selectedProject.tags.map((tag, index) => (
+                      {selectedJob.skills.map((skill, index) => (
                         <Badge
                           key={index}
                           variant="secondary"
                           className="px-3 py-1.5 rounded-full text-xs"
                         >
-                          {tag}
+                          {skill}
                         </Badge>
                       ))}
                     </div>
@@ -515,7 +624,7 @@ export default function Page() {
                   <Flex direction={'column'} gap={'4'}>
                     <Heading>Project Description</Heading>
                     <div className="whitespace-pre-wrap">
-                      <Text>{selectedProject.description}</Text>
+                      <Text>{selectedJob.description}</Text>
                     </div>
                   </Flex>
                 </CardContent>

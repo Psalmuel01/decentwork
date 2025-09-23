@@ -239,24 +239,24 @@ interface JobData {
   duration: string;
   jobid: string;
   name: string;
-  proposals: ProposalData2[];
+  proposals: ProposalData[];
   proposalscount: number;
   skills: string[];
   status: string;
   token: string;
 }
 
-interface ProposalData {
-  proposalid: string;
-  freelancerid: string;
-  coverLetter: string;
-  proposedBudget: string;
-  timeline: string;
-  status: string;
-  createdAt: string;
-}
+// interface ProposalData {
+//   proposalid: string;
+//   freelancerid: string;
+//   coverLetter: string;
+//   proposedBudget: string;
+//   timeline: string;
+//   status: string;
+//   createdAt: string;
+// }
 
-interface ProposalData2 {
+interface ProposalData {
   bidAmount: number;
   clientWalletAddress: string;
   coverLetter: string;
@@ -353,7 +353,7 @@ const Page = () => {
     null,
   );
   const [selectedJob, setSelectedJob] = useState<JobData | null>(null);
-  const [isLoadingProjects, setIsLoadingProjects] = useState(false);
+  // const [isLoadingProjects, setIsLoadingProjects] = useState(false);
   const [isLoadingJobs, setIsLoadingJobs] = useState(false);
   const [isLoadingFreelancers, setIsLoadingFreelancers] = useState(false);
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
@@ -425,39 +425,39 @@ const Page = () => {
   };
 
   // Fetch projects
-  const fetchProjects = async () => {
-    setIsLoadingProjects(true);
-    try {
-      const response = await fetch(API_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          query: VIEW_PROJECTS,
-        }),
-      });
+  // const fetchProjects = async () => {
+  //   setIsLoadingProjects(true);
+  //   try {
+  //     const response = await fetch(API_URL, {
+  //       method: 'POST',
+  //       headers: {
+  //         'Content-Type': 'application/json',
+  //       },
+  //       body: JSON.stringify({
+  //         query: VIEW_PROJECTS,
+  //       }),
+  //     });
 
-      const result = await response.json();
-      if (result.errors) {
-        console.error('GraphQL errors:', result.errors);
-        return;
-      }
+  //     const result = await response.json();
+  //     if (result.errors) {
+  //       console.error('GraphQL errors:', result.errors);
+  //       return;
+  //     }
 
-      const projectsData = result.data?.viewProjects;
-      console.log(projectsData);
-      if (projectsData && Array.isArray(projectsData)) {
-        setProjects(projectsData);
-        if (projectsData.length > 0) {
-          setSelectedProject(projectsData[0]);
-        }
-      }
-    } catch (error) {
-      console.error('Error fetching projects:', error);
-    } finally {
-      setIsLoadingProjects(false);
-    }
-  };
+  //     const projectsData = result.data?.viewProjects;
+  //     console.log(projectsData);
+  //     if (projectsData && Array.isArray(projectsData)) {
+  //       setProjects(projectsData);
+  //       if (projectsData.length > 0) {
+  //         setSelectedProject(projectsData[0]);
+  //       }
+  //     }
+  //   } catch (error) {
+  //     console.error('Error fetching projects:', error);
+  //   } finally {
+  //     setIsLoadingProjects(false);
+  //   }
+  // };
 
   // Fetch freelancers
   const fetchFreelancers = async () => {
@@ -537,7 +537,7 @@ const Page = () => {
 
       if (clientDetails) {
         // Client profile exists, stay on dashboard
-        await fetchProjects();
+        // await fetchProjects();
         await fetchJobs();
         await fetchFreelancers();
       } else if (isNewClientUser) {
@@ -663,7 +663,8 @@ const Page = () => {
       await new Promise((resolve) => setTimeout(resolve, 1500));
 
       // Refresh projects data
-      await fetchProjects();
+      // await fetchProjects();
+      await fetchJobs();
     } catch (err) {
       console.error('Error terminating contract:', err);
       setTxError(
@@ -753,7 +754,8 @@ const Page = () => {
         setIsCreateJobOpen(false);
 
         // Refresh projects
-        await fetchProjects();
+        // await fetchProjects();
+        await fetchJobs();
       } else {
         setCreateJobError('Failed to create job');
       }
@@ -1335,7 +1337,7 @@ const Page = () => {
                               }
                               getProposalCount={getProposalCount}
                             />
-                          ))}*/}
+                          ))}
                       </div>
                     ) : (
                       <div className="pt-20 flex flex-col items-center font-circular">
@@ -1351,7 +1353,7 @@ const Page = () => {
                           <p className="font-medium text-base">Post a Bounty</p>
                         </Button>
                       </div>
-                    )}
+                    )}*/}
                   </div>
 
                   <div className="col-span-4 pb-10 overflow-y-auto custom-scrollbar flex flex-col gap-y-6 font-circular">

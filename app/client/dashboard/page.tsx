@@ -485,7 +485,7 @@ const Page = () => {
   // Generate dashboard cards data
   const getDashboardCardsData = () => {
     const totalProposals = jobs.reduce(
-      (sum, job) => sum + (job.proposals?.length || 0),
+      (sum, job) => sum + (job.proposalscount || 0),
       0,
     );
     const activeJobs = jobs.filter((j) => j.status === 'active').length;

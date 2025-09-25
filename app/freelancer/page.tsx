@@ -329,40 +329,6 @@ export default function Page() {
   // const [isLoadingProjects, setIsLoadingProjects] = useState(false);
   const [isLoadingJobs, setIsLoadingJobs] = useState(false);
 
-  // const fetchProjects = async () => {
-  //   setIsLoadingProjects(true);
-  //   try {
-  //     const response = await fetch(API_URL, {
-  //       method: 'POST',
-  //       headers: {
-  //         'Content-Type': 'application/json',
-  //       },
-  //       body: JSON.stringify({
-  //         query: VIEW_PROJECTS,
-  //       }),
-  //     });
-
-  //     const result = await response.json();
-
-  //     if (result.errors) {
-  //       console.error('GraphQL errors:', result.errors);
-  //       return;
-  //     }
-
-  //     const projectsData = result.data?.viewProjects;
-  //     if (projectsData && Array.isArray(projectsData)) {
-  //       setProjects(projectsData);
-  //       if (projectsData.length > 0) {
-  //         setSelectedProject(projectsData[0]);
-  //       }
-  //     }
-  //   } catch (error) {
-  //     console.error('Error fetching projects:', error);
-  //   } finally {
-  //     setIsLoadingProjects(false);
-  //   }
-  // };
-
   const fetchJobs = async () => {
     const token = localStorage.getItem('authToken');
     if (!token) {
@@ -394,6 +360,7 @@ export default function Page() {
       console.log(jobsData);
       if (jobsData && Array.isArray(jobsData)) {
         setJobs(jobsData);
+        setSelectedJob(jobsData[0]);
       }
     } catch (error) {
       console.error('Error fetching jobs:', error);

@@ -438,7 +438,7 @@ export default function Page() {
             mutation UpdateFreelancerProfile(
               $address: String,
               $bio: String,
-              $category: Category,
+              $category: Category!,
               $city: String,
               $country: String,
               $dateOfBirth: String,

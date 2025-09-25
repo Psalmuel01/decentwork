@@ -15,6 +15,7 @@ import DashboardCards from '@/components/DashboardCards';
 import { ProposalEngagementChart } from '@/components/ProposalEngagementChart';
 import { ActiveProjectsTable } from '@/components/ActiveProjectsTable';
 import { LatestProposals } from '@/components/LatestProposals';
+import { AllProposals } from '@/components/AllProposals';
 import { ExpertCardType } from '@/types';
 import WalletIcon from '@/icons/wallet';
 import ProjectIcon from '@/icons/navbar/ProjectIcon';
@@ -28,7 +29,7 @@ import NotificationCard from '@/components/freelancer/notification-card';
 // import ActiveHireJob from '@/components/client/active-project-card';
 import ExpertCard from '@/components/client/expert-card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import ProposalsList from '@/components/client/proposals-list';
+
 import CompletedJobs from '@/components/client/completed-jobs';
 import {
   Dialog,
@@ -213,16 +214,6 @@ interface JobData {
   token: string;
 }
 
-// interface ProposalData {
-//   proposalid: string;
-//   freelancerid: string;
-//   coverLetter: string;
-//   proposedBudget: string;
-//   timeline: string;
-//   status: string;
-//   createdAt: string;
-// }
-
 interface ProposalData {
   bidAmount: number;
   clientWalletAddress: string;
@@ -390,41 +381,6 @@ const Page = () => {
       return null;
     }
   };
-
-  // Fetch projects
-  // const fetchProjects = async () => {
-  //   setIsLoadingProjects(true);
-  //   try {
-  //     const response = await fetch(API_URL, {
-  //       method: 'POST',
-  //       headers: {
-  //         'Content-Type': 'application/json',
-  //       },
-  //       body: JSON.stringify({
-  //         query: VIEW_PROJECTS,
-  //       }),
-  //     });
-
-  //     const result = await response.json();
-  //     if (result.errors) {
-  //       console.error('GraphQL errors:', result.errors);
-  //       return;
-  //     }
-
-  //     const projectsData = result.data?.viewProjects;
-  //     console.log(projectsData);
-  //     if (projectsData && Array.isArray(projectsData)) {
-  //       setProjects(projectsData);
-  //       if (projectsData.length > 0) {
-  //         setSelectedProject(projectsData[0]);
-  //       }
-  //     }
-  //   } catch (error) {
-  //     console.error('Error fetching projects:', error);
-  //   } finally {
-  //     setIsLoadingProjects(false);
-  //   }
-  // };
 
   // Fetch freelancers
   const fetchFreelancers = async () => {
@@ -812,7 +768,7 @@ const Page = () => {
             </Grid>
 
             <Flex direction={'column'} gap={'4'}>
-              <LatestProposals />
+              <LatestProposals jobs={jobs} />
             </Flex>
           </Flex>
         </PageBody>
@@ -1344,8 +1300,8 @@ const Page = () => {
               </TabsContent>
 
               <TabsContent value="proposals">
-                <div className="bg-white shadow-md rounded-lg p-6 px-8">
-                  <ProposalsList />
+                <div className="p-6">
+                  <AllProposals jobs={jobs} />
                 </div>
               </TabsContent>
 

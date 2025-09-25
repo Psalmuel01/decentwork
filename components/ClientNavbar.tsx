@@ -319,13 +319,13 @@ export default function ClientNavbar() {
           <SegmentedControl.Item value="project">
             <Flex align="center" gap="2">
               <ProjectIcon />
-              <Text size={'2'}>Project</Text>
+              <Text size={'2'}>Jobs</Text>
             </Flex>
           </SegmentedControl.Item>
           <SegmentedControl.Item value="proposal">
             <Flex align="center" gap="2">
               <ProposalIcon />
-              <Text size={'2'}>Proposal</Text>
+              <Text size={'2'}>Proposals</Text>
             </Flex>
           </SegmentedControl.Item>
         </SegmentedControl.Root>

@@ -1,9 +1,10 @@
 'use client';
 
-import { useClient } from '@/context/client-context';
-import CopyIcon from '@/icons/client/copy-icon';
-import { Loader2, LucideMoveLeft } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { Loader2, LucideMoveLeft } from 'lucide-react';
+import Link from 'next/link';
+import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -11,10 +12,6 @@ import {
   DialogContent,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { useXionWallet } from '@/context/xion-context';
-import LocationIcon from '@/icons/freelance/location-icon';
-import Link from 'next/link';
-import { ApplicationRoutes } from '@/config/routes';
 import {
   PageBody,
   PageContainer,
@@ -22,28 +19,165 @@ import {
   PageHeaderDescription,
   PageHeaderTitle,
 } from '@/components/PageContainer';
-import { Flex } from '@radix-ui/themes';
+import { Flex, Table, Text } from '@radix-ui/themes';
 import { Proposals } from '@/components/Proposals';
-import Image from 'next/image';
+import { ApplicationRoutes } from '@/config/routes';
+import CopyIcon from '@/icons/client/copy-icon';
+import LocationIcon from '@/icons/freelance/location-icon';
+import { LatestProposals } from '@/components/LatestProposals';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Avatar } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
+
+// API Configuration
+const API_URL = 'https://decentwork.onrender.com/graphql';
+
+// GraphQL Queries
+const GET_JOBS = `
+  query GetJobs {
+    GetJobs {
+      code
+      jobdDetails {
+        _id
+        amount
+        budget
+        category
+        clientWalletAddress
+        clientid
+        createdAt
+        description
+        duration
+        jobid
+        name
+        proposals {
+          bidAmount
+          clientWalletAddress
+          coverLetter
+          createdAt
+          deliveryTime
+          freelancerWalletAddress
+          proposalId
+          status
+        }
+        proposalscount
+        skills
+        status
+        token
+      }
+      message
+      success
+    }
+  }`;
+
+const ACCEPT_PROPOSAL = `
+  mutation AcceptProposal($jobId: Int!, $freelancerAddress: String!) {
+    acceptProposal(jobId: $jobId, freelancerAddress: $freelancerAddress) {
+      success
+      message
+    }
+  }`;
+
+// Interfaces
+interface ProposalData {
+  bidAmount: number;
+  clientWalletAddress: string;
+  coverLetter: string;
+  createdAt: string;
+  deliveryTime: number;
+  freelancerWalletAddress: string;
+  proposalId: string;
+  status: 'accepted' | 'declined' | 'pending';
+}
+
+interface JobData {
+  amount: string;
+  budget: number;
+  category: string;
+  clientWalletAddress: string;
+  clientid: string;
+  createdAt: string;
+  description: string;
+  duration: string;
+  jobid: string;
+  name: string;
+  proposals: ProposalData[];
+  proposalscount: number;
+  skills: string[];
+  status: string;
+  token: string;
+}
 
 const Page = () => {
+  const router = useRouter();
   const hireModal = useRef<HTMLDivElement>(null);
   const rejectModal = useRef<HTMLDivElement>(null);
-  const { isConnected } = useXionWallet();
-  const { acceptProposal } = useClient();
-  const [isHiring, setIsHiring] = useState(false);
-  const [, setError] = useState<string | null>(null);
 
+  // State management
+  const [jobs, setJobs] = useState<JobData[]>([]);
+  const [isLoadingJobs, setIsLoadingJobs] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isHiring, setIsHiring] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [totalProposals, setTotalProposals] = useState(0);
+
+  // Check authentication
   useEffect(() => {
-    window.scrollTo(0, 0);
+    const token = localStorage.getItem('authToken');
+    setIsAuthenticated(!!token);
   }, []);
 
+  // Fetch jobs with proposals
+  const fetchJobs = async () => {
+    const token = localStorage.getItem('authToken');
+    if (!token) {
+      console.log('No auth token found');
+      return;
+    }
+
+    setIsLoadingJobs(true);
+    try {
+      const response = await fetch(API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          query: GET_JOBS,
+        }),
+      });
+
+      const result = await response.json();
+      if (result.errors) {
+        console.error('GraphQL errors:', result.errors);
+        return;
+      }
+
+      const jobsData = result.data?.GetJobs?.jobdDetails;
+      if (jobsData && Array.isArray(jobsData)) {
+        setJobs(jobsData);
+        // Calculate total proposals
+        const total = jobsData.reduce(
+          (sum, job) => sum + (job.proposalscount || 0),
+          0,
+        );
+        setTotalProposals(total);
+      }
+    } catch (error) {
+      console.error('Error fetching jobs:', error);
+      setError('Failed to load proposals');
+    } finally {
+      setIsLoadingJobs(false);
+    }
+  };
+
+  // Accept proposal
   const handleHireFreelancer = async (
     jobId: string,
     freelancerAddress: string,
   ) => {
-    if (!isConnected) {
-      setError('Please connect to hire this freelancer');
+    if (!isAuthenticated) {
+      setError('Please log in to hire this freelancer');
       return;
     }
 
@@ -51,14 +185,37 @@ const Page = () => {
     setError(null);
 
     try {
-      const success = await acceptProposal(parseInt(jobId), freelancerAddress);
+      const token = localStorage.getItem('authToken');
+      const response = await fetch(API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          query: ACCEPT_PROPOSAL,
+          variables: {
+            jobId: parseInt(jobId),
+            freelancerAddress: freelancerAddress,
+          },
+        }),
+      });
 
-      if (success) {
-        // Close the modal and show success message
+      const result = await response.json();
+      if (result.errors) {
+        throw new Error(
+          result.errors[0]?.message || 'Failed to hire freelancer',
+        );
+      }
+
+      if (result.data?.acceptProposal?.success) {
+        // Close the modal and refresh data
         hireModal.current?.click();
-        // You might want to show a success message or redirect
+        await fetchJobs();
       } else {
-        throw new Error('Failed to hire freelancer');
+        throw new Error(
+          result.data?.acceptProposal?.message || 'Failed to hire freelancer',
+        );
       }
     } catch (err) {
       console.error('Error hiring freelancer:', err);
@@ -70,20 +227,62 @@ const Page = () => {
     }
   };
 
+  // Copy to clipboard function
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text).catch((err) => {
+      console.error('Failed to copy: ', err);
+    });
+  };
+
+  // Initialize data
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchJobs();
+    }
+  }, [isAuthenticated]);
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
+  if (!isAuthenticated) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <h2 className="text-2xl font-semibold mb-4">Please Log In</h2>
+          <p className="text-gray-600 mb-6">
+            You need to be logged in to access proposals.
+          </p>
+          <Button onClick={() => router.push('/')}>Go to Login</Button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <>
       <PageContainer>
         <PageHeader>
           <PageHeaderTitle>Proposals</PageHeaderTitle>
           <PageHeaderDescription>
-            You’ve received 14 new proposals across your posted jobs.
+            {isLoadingJobs
+              ? 'Loading proposals...'
+              : `You've received ${totalProposals} proposals across your posted jobs.`}
           </PageHeaderDescription>
         </PageHeader>
 
         <PageBody>
           <Flex direction={'column'} gap={'8'} py={'8'}>
             <Flex direction={'column'} gap={'4'}>
-              <Proposals />
+              {error && (
+                <div className="p-4 bg-red-50 border border-red-200 rounded-md">
+                  <p className="text-red-800">{error}</p>
+                </div>
+              )}
+              <LatestProposals jobs={jobs} />
+              <AllProposals jobs={jobs} />
+              {/*remove or improvise all proposals below*/}
+              {/*or see if you can get latestproposals to work*/}
             </Flex>
           </Flex>
         </PageBody>
@@ -91,7 +290,7 @@ const Page = () => {
 
       <main className="mt-32 px-5 mb-36">
         <div className="max-w-screen-lg mx-auto w-full">
-          <div className="bg-white relative rounded-xl p-10 mt-9 pb-32 font-circular ">
+          <div className="bg-white relative rounded-xl p-10 mt-9 pb-32 font-circular">
             <Link href={ApplicationRoutes.CLIENT_DASHBOARD} className="">
               <LucideMoveLeft size={20} />
             </Link>
@@ -112,14 +311,14 @@ const Page = () => {
                   </p>
 
                   <p className="text-[#545756] text-base font-normal mt-4">
-                    I’m Onesty, a UX/UI designer with 4 years of experience in
+                    I'm Onesty, a UX/UI designer with 4 years of experience in
                     product design field. I came across your job opening for
                     UIUX role and would love to bring my skills in branding,
                     user interfaces, user experience and prototyping to you.
-                    Here’s what I offer: Boosted engagement by 30% through a
+                    Here's what I offer: Boosted engagement by 30% through a
                     redesigned website. I turn complex ideas into visually
                     stunning, user-friendly designs. I work closely with teams
-                    to align designs with business goals. I’d love to discuss
+                    to align designs with business goals. I'd love to discuss
                     how I can contribute to your team. You can view my work
                     here: https://behance.net/onlyhonesst. Let me know a good
                     time to connect! Looking forward to hearing from you.
@@ -129,11 +328,14 @@ const Page = () => {
                 <div className="flex flex-col gap-y-4 mt-10">
                   <div className="">
                     <p className="text-[#545756] pb-3 font-medium">
-                      Freelancer’s Email
+                      Freelancer's Email
                     </p>
                     <div className="border-[#E4E4E7] flex items-center justify-between rounded-md py-3 text-[#545756] px-5 border">
                       <p className="">JohnDoe@gmail.com</p>
-                      <div className="cursor-pointer">
+                      <div
+                        className="cursor-pointer"
+                        onClick={() => copyToClipboard('JohnDoe@gmail.com')}
+                      >
                         <CopyIcon />
                       </div>
                     </div>
@@ -141,11 +343,14 @@ const Page = () => {
 
                   <div className="">
                     <p className="text-[#545756] pb-3 font-medium">
-                      Freelancer’s Phone
+                      Freelancer's Phone
                     </p>
                     <div className="border-[#E4E4E7] flex items-center justify-between rounded-md py-3 text-[#545756] px-5 border">
                       <p className="">+234 701 111 2222</p>
-                      <div className="cursor-pointer">
+                      <div
+                        className="cursor-pointer"
+                        onClick={() => copyToClipboard('+234 701 111 2222')}
+                      >
                         <CopyIcon />
                       </div>
                     </div>
@@ -153,13 +358,20 @@ const Page = () => {
 
                   <div className="">
                     <p className="text-[#545756] pb-3 font-medium">
-                      Freelancer’s Email
+                      Freelancer's Wallet Address
                     </p>
                     <div className="border-[#E4E4E7] flex items-center justify-between rounded-md py-3 text-[#545756] bg-[#F4F4F5] px-5 border">
                       <p className="">
                         0x22B202d30973456aD12c4358AF6758900B61bc5d
                       </p>
-                      <div className="cursor-pointer">
+                      <div
+                        className="cursor-pointer"
+                        onClick={() =>
+                          copyToClipboard(
+                            '0x22B202d30973456aD12c4358AF6758900B61bc5d',
+                          )
+                        }
+                      >
                         <svg
                           width="21"
                           height="20"
@@ -191,14 +403,16 @@ const Page = () => {
                 <div className="bg-[#F4F4F5] border border-[#E4E4E7] rounded-md px-5 py-6">
                   <div className="flex items-center space-x-3">
                     <Image
-                      width={100}
-                      height={100}
-                      className={'h-full w-full'}
+                      width={60}
+                      height={60}
+                      className={'rounded-full object-cover'}
                       src="/images/client/client.png"
-                      alt="client"
+                      alt="freelancer"
                     />
                     <div className="">
-                      <p className="text-[#18181B] text-base">Onest Man</p>
+                      <p className="text-[#18181B] text-base font-medium">
+                        Onest Man
+                      </p>
                       <div className="flex items-center space-x-4">
                         <div className="flex items-center space-x-1">
                           <svg
@@ -213,13 +427,12 @@ const Page = () => {
                               fill="#FED32E"
                             />
                           </svg>
-
                           <p className="text-sm font-medium">4.9</p>
                         </div>
 
                         <div className="flex items-center space-x-1">
                           <LocationIcon />
-                          <p className="">Nigeria</p>
+                          <p className="text-xs text-[#7E8082]">Nigeria</p>
                         </div>
                       </div>
                     </div>
@@ -238,14 +451,14 @@ const Page = () => {
                   </div>
 
                   <div className="py-5">
-                    <p className="text-[#545756] text-[15px]">
+                    <p className="text-[#545756] text-[15px] font-medium">
                       UIUX Designer, Illustrator, Motion & Brand Designer
                     </p>
 
                     <p className="text-[#7E8082] text-sm mt-2">
                       I am a highly creative designer with over three years of
                       experience in the design industry. I have a deep
-                      understanding...
+                      understanding of user-centered design...
                     </p>
                   </div>
                 </div>
@@ -256,8 +469,9 @@ const Page = () => {
                       hireModal.current?.click();
                     }}
                     className="text-white w-full"
+                    disabled={isHiring}
                   >
-                    Hire freelancer
+                    {isHiring ? 'Processing...' : 'Hire freelancer'}
                   </Button>
                   <Button
                     onClick={() => {
@@ -265,7 +479,7 @@ const Page = () => {
                     }}
                     className="text-[#FB822F] hover:bg-white focus:bg-white border border-[#FB822F] bg-white w-full"
                   >
-                    Reject freelancer
+                    Reject proposal
                   </Button>
                 </div>
               </div>
@@ -274,11 +488,11 @@ const Page = () => {
         </div>
       </main>
 
-      {/* Hire  */}
+      {/* Hire Modal */}
       <Dialog>
         <DialogTrigger asChild>
           <div ref={hireModal} className="hidden">
-            Edit Profile
+            Hire Freelancer
           </div>
         </DialogTrigger>
 
@@ -289,33 +503,42 @@ const Page = () => {
             </p>
 
             <Image
-              width={100}
-              height={100}
-              className={'h-full w-full'}
+              width={80}
+              height={80}
+              className={'rounded-full object-cover'}
               src="/images/client/client.png"
-              alt="client"
+              alt="freelancer"
             />
-            <span className="text-sm text-[#7E8082]">Freelancer</span>
+            <span className="text-sm text-[#7E8082] mt-2">Freelancer</span>
 
-            <div className=" flex justify-center">
+            <div className="flex justify-center">
               <span className="text-[#7E8082] font-normal font-circular text-sm text-center mt-5">
-                You’re about to hire Onest Man. Once confirmed, they’ll be
+                You're about to hire Onest Man. Once confirmed, they'll be
                 notified and granted project access.
               </span>
             </div>
+
+            {error && (
+              <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-md w-full">
+                <p className="text-red-800 text-sm text-center">{error}</p>
+              </div>
+            )}
           </div>
 
           <div className="mb-3 flex space-x-3">
             <DialogClose className="w-full">
-              <Button className="text-white w-full mt-6 border border-gray-300 bg-white text-primary hover:bg-white focus:bg-white">
+              <Button className="text-primary w-1/2 mt-6 border border-gray-300 bg-white hover:bg-gray-50 focus:bg-gray-50">
                 Cancel
               </Button>
             </DialogClose>
             <Button
               onClick={() =>
-                handleHireFreelancer('1', 'freelancer-address-here')
+                handleHireFreelancer(
+                  '1',
+                  '0x22B202d30973456aD12c4358AF6758900B61bc5d',
+                )
               }
-              className="w-full mt-6 bg-primary text-white"
+              className="w-1/2 mt-6 bg-primary text-white"
               disabled={isHiring}
             >
               {isHiring ? (
@@ -331,11 +554,11 @@ const Page = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Reject */}
+      {/* Reject Modal */}
       <Dialog>
         <DialogTrigger asChild>
           <div ref={rejectModal} className="hidden">
-            Edit Profile
+            Reject Proposal
           </div>
         </DialogTrigger>
 
@@ -346,17 +569,17 @@ const Page = () => {
             </p>
 
             <Image
-              width={100}
-              height={100}
-              className={'w-full h-full'}
+              width={80}
+              height={80}
+              className={'rounded-full object-cover'}
               src="/images/client/client.png"
-              alt="client"
+              alt="freelancer"
             />
-            <span className="text-sm text-[#7E8082]">Freelancer</span>
+            <span className="text-sm text-[#7E8082] mt-2">Freelancer</span>
 
-            <div className=" flex justify-center">
+            <div className="flex justify-center">
               <span className="text-[#7E8082] font-normal font-circular text-sm text-center mt-5">
-                Are you sure you want to reject Onest Man’s proposal? This
+                Are you sure you want to reject Onest Man's proposal? This
                 action cannot be undone.
               </span>
             </div>
@@ -364,11 +587,11 @@ const Page = () => {
 
           <div className="mb-3 flex space-x-3">
             <DialogClose className="w-full">
-              <Button className="text-white w-full mt-6 border border-gray-300 bg-white text-primary hover:bg-white focus:bg-white">
+              <Button className="text-primary w-1/2 mt-6 border border-gray-300 bg-white hover:bg-gray-50 focus:bg-gray-50">
                 Cancel
               </Button>
             </DialogClose>
-            <Button className="w-full mt-6 bg-[#FB822F] text-white hover:bg-[#FB822F] focus:bg-[#FB822F]">
+            <Button className="w-1/2 mt-6 bg-[#FB822F] text-white hover:bg-[#FB822F] focus:bg-[#FB822F]">
               Reject proposal
             </Button>
           </div>
@@ -379,3 +602,311 @@ const Page = () => {
 };
 
 export default Page;
+
+export function AllProposals({ jobs }: { jobs: JobData[] }) {
+  const [allProposals, setAllProposals] = useState<[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [statusFilter, setStatusFilter] = useState<
+    'all' | 'pending' | 'accepted' | 'declined'
+  >('all');
+
+  useEffect(() => {
+    const fetchJobsAndProposals = async () => {
+      const token = localStorage.getItem('authToken');
+      if (!token) {
+        setIsLoading(false);
+        return;
+      }
+
+      try {
+        if (!jobs || !Array.isArray(jobs)) {
+          setAllProposals([]);
+          return;
+        }
+
+        // Fetch details for each job to get proposals
+        const jobDetailsPromises = jobs.map(
+          async (job: { jobid: string; name: string; budget: number }) => {
+            try {
+              const detailsResponse = await fetch(API_URL, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({
+                  query: GET_JOB_DETAILS,
+                  variables: { jobid: job.jobid },
+                }),
+              });
+
+              const detailsResult = await detailsResponse.json();
+              if (detailsResult.errors) {
+                console.error(
+                  `Error fetching job ${job.jobid}:`,
+                  detailsResult.errors,
+                );
+                return null;
+              }
+
+              return detailsResult.data?.GetJobDetails?.jobdDetails;
+            } catch (error) {
+              console.error(
+                `Error fetching job details for ${job.jobid}:`,
+                error,
+              );
+              return null;
+            }
+          },
+        );
+
+        const jobDetailsResults = await Promise.all(jobDetailsPromises);
+        const validJobDetails = jobDetailsResults.filter(
+          (job): job is JobData => job !== null,
+        );
+
+        // Extract all proposals from jobs that have proposals
+        const proposals: ProposalWithJob[] = validJobDetails
+          .filter((job) => job.proposals && job.proposals.length > 0)
+          .flatMap((job) =>
+            job.proposals.map((proposal) => ({
+              ...proposal,
+              jobName: job.name,
+              jobId: job.jobid,
+              jobBudget: job.budget,
+            })),
+          )
+          .sort(
+            (a, b) =>
+              new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+          );
+
+        setAllProposals(proposals);
+      } catch (error) {
+        console.error('Error fetching proposals:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchJobsAndProposals();
+  }, [jobs]);
+
+  const formatWalletAddress = (address: string) => {
+    if (!address) return 'Unknown';
+    if (address.length <= 12) return address;
+    return `${address.substring(0, 6)}...${address.substring(address.length - 6)}`;
+  };
+
+  const getStatusBadgeVariant = (status: string) => {
+    switch (status) {
+      case 'accepted':
+        return 'default';
+      case 'declined':
+        return 'destructive';
+      case 'pending':
+        return 'secondary';
+      default:
+        return 'outline';
+    }
+  };
+
+  const filteredProposals = allProposals.filter(
+    (proposal) => statusFilter === 'all' || proposal.status === statusFilter,
+  );
+
+  const getProposalStats = () => {
+    const total = allProposals.length;
+    const pending = allProposals.filter((p) => p.status === 'pending').length;
+    const accepted = allProposals.filter((p) => p.status === 'accepted').length;
+    const declined = allProposals.filter((p) => p.status === 'declined').length;
+
+    return { total, pending, accepted, declined };
+  };
+
+  const stats = getProposalStats();
+
+  return (
+    <div className="space-y-6">
+      {/* Statistics Cards */}
+      <div className="grid grid-cols-4 gap-4">
+        <Card>
+          <CardContent className="p-4">
+            <div className="text-2xl font-bold">{stats.total}</div>
+            <p className="text-xs text-muted-foreground">Total Proposals</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="text-2xl font-bold text-yellow-600">
+              {stats.pending}
+            </div>
+            <p className="text-xs text-muted-foreground">Pending</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="text-2xl font-bold text-green-600">
+              {stats.accepted}
+            </div>
+            <p className="text-xs text-muted-foreground">Accepted</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="text-2xl font-bold text-red-600">
+              {stats.declined}
+            </div>
+            <p className="text-xs text-muted-foreground">Declined</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Main Proposals Card */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle>All Proposals ({filteredProposals.length})</CardTitle>
+            <div className="flex gap-2">
+              <Button
+                size="sm"
+                variant={statusFilter === 'all' ? 'default' : 'outline'}
+                onClick={() => setStatusFilter('all')}
+              >
+                All
+              </Button>
+              <Button
+                size="sm"
+                variant={statusFilter === 'pending' ? 'default' : 'outline'}
+                onClick={() => setStatusFilter('pending')}
+              >
+                Pending
+              </Button>
+              <Button
+                size="sm"
+                variant={statusFilter === 'accepted' ? 'default' : 'outline'}
+                onClick={() => setStatusFilter('accepted')}
+              >
+                Accepted
+              </Button>
+              <Button
+                size="sm"
+                variant={statusFilter === 'declined' ? 'default' : 'outline'}
+                onClick={() => setStatusFilter('declined')}
+              >
+                Declined
+              </Button>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="max-h-[70vh] overflow-y-auto">
+            <Table.Root variant="surface" className="w-full border-0">
+              <Table.Header>
+                <Table.Row className="h-12 leading-[48px]">
+                  <Table.ColumnHeaderCell>Freelancer</Table.ColumnHeaderCell>
+                  <Table.ColumnHeaderCell align="center">
+                    Job Title
+                  </Table.ColumnHeaderCell>
+                  <Table.ColumnHeaderCell align="center">
+                    Status
+                  </Table.ColumnHeaderCell>
+                  <Table.ColumnHeaderCell align="center">
+                    Delivery Time
+                  </Table.ColumnHeaderCell>
+                  <Table.ColumnHeaderCell align="right">
+                    Bid Amount
+                  </Table.ColumnHeaderCell>
+                  <Table.ColumnHeaderCell align="right">
+                    Budget
+                  </Table.ColumnHeaderCell>
+                </Table.Row>
+              </Table.Header>
+
+              <Table.Body>
+                {isLoading ? (
+                  <Table.Row className="h-16 leading-[64px]">
+                    <Table.Cell colSpan={6} className="text-center">
+                      Loading proposals...
+                    </Table.Cell>
+                  </Table.Row>
+                ) : filteredProposals.length > 0 ? (
+                  filteredProposals.map((proposal, index) => (
+                    <Table.Row
+                      key={`${proposal.proposalId}-${index}`}
+                      className="h-16 leading-[64px]"
+                    >
+                      <Table.RowHeaderCell>
+                        <Flex align="center" gap="3" className="h-full">
+                          <Avatar
+                            className="rounded-full"
+                            fallback={proposal.freelancerWalletAddress
+                              .substring(0, 2)
+                              .toUpperCase()}
+                            src="/avatar/avatar5.svg"
+                          />
+                          <Flex align="start" direction="column" gap="1">
+                            <Text size="2" weight="medium">
+                              {formatWalletAddress(
+                                proposal.freelancerWalletAddress,
+                              )}
+                            </Text>
+                            <Text color="gray" size="1">
+                              {new Date(
+                                proposal.createdAt,
+                              ).toLocaleDateString()}
+                            </Text>
+                          </Flex>
+                        </Flex>
+                      </Table.RowHeaderCell>
+                      <Table.Cell align="center">
+                        <Text
+                          className="truncate max-w-32"
+                          title={proposal.jobName}
+                        >
+                          {proposal.jobName}
+                        </Text>
+                      </Table.Cell>
+                      <Table.Cell align="center">
+                        <Badge
+                          variant={getStatusBadgeVariant(proposal.status)}
+                          className="capitalize"
+                        >
+                          {proposal.status}
+                        </Badge>
+                      </Table.Cell>
+                      <Table.Cell align="center">
+                        <Text size="2">{proposal.deliveryTime} days</Text>
+                      </Table.Cell>
+                      <Table.Cell align="right">
+                        <Text weight="medium" size="2">
+                          ${proposal.bidAmount}
+                        </Text>
+                      </Table.Cell>
+                      <Table.Cell align="right">
+                        <Text color="gray" size="2">
+                          ${proposal.jobBudget}
+                        </Text>
+                      </Table.Cell>
+                    </Table.Row>
+                  ))
+                ) : (
+                  <Table.Row className="h-16 leading-[64px]">
+                    <Table.Cell
+                      colSpan={6}
+                      className="text-center text-gray-500"
+                    >
+                      {statusFilter === 'all'
+                        ? 'No proposals found'
+                        : `No ${statusFilter} proposals found`}
+                    </Table.Cell>
+                  </Table.Row>
+                )}
+              </Table.Body>
+            </Table.Root>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}

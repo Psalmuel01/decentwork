@@ -445,7 +445,7 @@ const Page = () => {
     return [
       {
         title: clientData?.walletAddress ? '0' : '0',
-        subtitle: 'USD',
+        subtitle: 'AR',
         description: 'Account Balance',
         icon: <WalletIcon />,
         showSelect: false,

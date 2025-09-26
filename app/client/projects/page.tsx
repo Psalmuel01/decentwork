@@ -653,7 +653,7 @@ const Page = () => {
                                   htmlFor="job-budget"
                                   className="text-sm font-medium text-gray-700"
                                 >
-                                  Budget (USD) *
+                                  Budget (AR) *
                                 </Label>
                                 <Input
                                   id="job-budget"

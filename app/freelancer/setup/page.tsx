@@ -1280,7 +1280,7 @@ export default function Page() {
                           name="hourlyRate"
                           render={({ field }) => (
                             <FormItem className={'w-full'}>
-                              <FormLabel>Hourly Rate (USD)</FormLabel>
+                              <FormLabel>Hourly Rate (AR)</FormLabel>
                               <FormControl>
                                 <Input
                                   className={'w-full h-12'}

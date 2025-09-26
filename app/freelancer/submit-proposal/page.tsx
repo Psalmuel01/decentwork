@@ -392,7 +392,7 @@ function SubmitProposalContent() {
                       />
                       <Separator orientation={'vertical'} size={'4'} />
                       <Text color={'gray'} className={'px-4'}>
-                        USD
+                        AR
                       </Text>
                     </Flex>
                   </Flex>

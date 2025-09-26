@@ -17,8 +17,8 @@ import { dryrun } from '@permaweb/aoconnect';
 const API_URL = 'https://decentwork.onrender.com/graphql';
 
 // Escrow Configuration
-const ESCROW_PROCESS_ID = 'ktl0iPdM44_VfTAVF557vSqaF9AfUAFUKDDaQRWyjf0';
-const TOKEN_PROCESS_ID = 'agYcCFJtrMG6cqMuZfskIkFTGvUPddICmtQSBIoPdiA';
+const ESCROW_PROCESS_ID = 'vI32TbLleCM8kk5s3MChwdVz9qfIJZ07U3Yfl5fEuw0';
+const TOKEN_PROCESS_ID = 'Ve4nk2QjJK9UGNmV_edrsfhFtDq9FkS8TcOkJ0zKN9I';
 
 // GraphQL Mutations
 const VERIFY_JOB = `

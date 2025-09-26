@@ -31,7 +31,7 @@ import { AllProposals } from '@/components/AllProposals';
 const API_URL = 'https://decentwork.onrender.com/graphql';
 
 // Escrow Configuration
-const ESCROW_PROCESS_ID = 'ktl0iPdM44_VfTAVF557vSqaF9AfUAFUKDDaQRWyjf0';
+const ESCROW_PROCESS_ID = 'vI32TbLleCM8kk5s3MChwdVz9qfIJZ07U3Yfl5fEuw0';
 
 // Wallet utilities
 function detectWallet() {

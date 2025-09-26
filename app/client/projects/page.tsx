@@ -39,8 +39,8 @@ import { Flex } from '@radix-ui/themes';
 const API_URL = 'https://decentwork.onrender.com/graphql';
 
 // Escrow Configuration
-const ESCROW_PROCESS_ID = 'ktl0iPdM44_VfTAVF557vSqaF9AfUAFUKDDaQRWyjf0';
-const TOKEN_PROCESS_ID = 'agYcCFJtrMG6cqMuZfskIkFTGvUPddICmtQSBIoPdiA';
+const ESCROW_PROCESS_ID = 'vI32TbLleCM8kk5s3MChwdVz9qfIJZ07U3Yfl5fEuw0';
+const TOKEN_PROCESS_ID = 'Ve4nk2QjJK9UGNmV_edrsfhFtDq9FkS8TcOkJ0zKN9I';
 
 // Wallet utilities
 function detectWallet() {
@@ -333,11 +333,11 @@ const Page = () => {
     try {
       // Step 1: Approve allowance
       console.log('Approving token allowance for escrow...');
-      await sendMessage(TOKEN_PROCESS_ID, [
-        { name: 'Action', value: 'Approve' },
-        { name: 'Spender', value: ESCROW_PROCESS_ID },
-        { name: 'Quantity', value: amount },
-      ]);
+      // await sendMessage(TOKEN_PROCESS_ID, [
+      //   { name: 'Action', value: 'Approve' },
+      //   { name: 'Spender', value: ESCROW_PROCESS_ID },
+      //   { name: 'Quantity', value: amount },
+      // ]);
 
       // Small delay to ensure approval is processed
       await new Promise((resolve) => setTimeout(resolve, 2000));

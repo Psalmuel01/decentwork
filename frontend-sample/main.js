@@ -1,4 +1,9 @@
-import { createDataItemSigner, message, dryrun } from '@permaweb/aoconnect';
+// import { createDataItemSigner, message, dryrun } from '@permaweb/aoconnect';
+import {
+  createDataItemSigner,
+  message,
+  dryrun,
+} from 'https://esm.sh/@permaweb/aoconnect';
 
 // Utility: simple logger
 const logEl = document.getElementById('log');

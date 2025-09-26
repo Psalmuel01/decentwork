@@ -3,6 +3,7 @@
 import { LucidePlus } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { createDataItemSigner, message } from '@permaweb/aoconnect';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -36,6 +37,37 @@ import { Flex } from '@radix-ui/themes';
 
 // API Configuration
 const API_URL = 'https://decentwork.onrender.com/graphql';
+
+// Escrow Configuration
+const ESCROW_PROCESS_ID = 'ktl0iPdM44_VfTAVF557vSqaF9AfUAFUKDDaQRWyjf0';
+const TOKEN_PROCESS_ID = 'agYcCFJtrMG6cqMuZfskIkFTGvUPddICmtQSBIoPdiA';
+
+// Wallet utilities
+function detectWallet() {
+  return window.arweaveWallet || null;
+}
+
+function createWalletSigner() {
+  const walletApi = detectWallet();
+  if (!walletApi) throw new Error('Connect wallet first');
+  return createDataItemSigner(walletApi);
+}
+
+async function sendMessage(
+  processId: string,
+  tags: Array<{ name: string; value: string }>,
+  data?: string,
+) {
+  const signer = createWalletSigner();
+  try {
+    const res = await message({ process: processId, signer, tags, data });
+    console.log('Sent message id:', res);
+    return res;
+  } catch (error) {
+    console.error('Error sending message:', error);
+    throw error;
+  }
+}
 
 // GraphQL Queries
 const GET_CLIENT_DETAILS = `
@@ -190,6 +222,7 @@ const Page = () => {
   const [isCreatingJob, setIsCreatingJob] = useState(false);
   const [createJobError, setCreateJobError] = useState<string | null>(null);
   const [txError, setTxError] = useState<string | null>(null);
+  const [isCreatingEscrow, setIsCreatingEscrow] = useState(false);
 
   // Create Job Modal State
   const [jobFormData, setJobFormData] = useState({
@@ -289,6 +322,58 @@ const Page = () => {
     }
   };
 
+  // Create escrow (approve + deposit)
+  const createEscrow = async (jobId: string, amount: string) => {
+    if (!ESCROW_PROCESS_ID || !TOKEN_PROCESS_ID) {
+      throw new Error('Escrow or Token process IDs not configured');
+    }
+
+    setIsCreatingEscrow(true);
+
+    try {
+      // Step 1: Approve allowance
+      console.log('Approving token allowance for escrow...');
+      await sendMessage(TOKEN_PROCESS_ID, [
+        { name: 'Action', value: 'Approve' },
+        { name: 'Spender', value: ESCROW_PROCESS_ID },
+        { name: 'Quantity', value: amount },
+      ]);
+
+      // Small delay to ensure approval is processed
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+
+      // Step 2: Deposit to escrow
+      console.log('Depositing to escrow...');
+      const walletApi = detectWallet();
+      if (!walletApi) {
+        throw new Error('Wallet not connected');
+      }
+
+      const currentAddress = await (walletApi.getActiveAddress
+        ? walletApi.getActiveAddress()
+        : walletApi.getActivePublicKey?.());
+
+      if (!currentAddress) {
+        throw new Error('Could not get wallet address');
+      }
+
+      await sendMessage(ESCROW_PROCESS_ID, [
+        { name: 'Action', value: 'Deposit' },
+        { name: 'jobId', value: jobId },
+        { name: 'client', value: currentAddress },
+        { name: 'token', value: TOKEN_PROCESS_ID },
+        { name: 'amount', value: amount },
+      ]);
+
+      console.log('Escrow created successfully for job:', jobId);
+    } catch (error) {
+      console.error('Error creating escrow:', error);
+      throw error;
+    } finally {
+      setIsCreatingEscrow(false);
+    }
+  };
+
   // Create Job
   const handleCreateJob = async () => {
     if (!isAuthenticated) {
@@ -305,6 +390,15 @@ const Page = () => {
       jobFormData.skills.length === 0
     ) {
       setCreateJobError('Please fill in all required fields');
+      return;
+    }
+
+    // Check if wallet is connected for escrow creation
+    const walletApi = detectWallet();
+    if (!walletApi) {
+      setCreateJobError(
+        'Please connect your wallet to create jobs with escrow',
+      );
       return;
     }
 
@@ -345,6 +439,28 @@ const Page = () => {
       }
 
       if (result.data?.createJob) {
+        const createdJob = result.data.createJob;
+
+        try {
+          // Create escrow immediately after job creation
+          console.log('Creating escrow for job:', createdJob.jobid);
+
+          // Convert budget to smallest token units (assuming 6 decimals)
+          const budgetInSmallestUnits = (
+            parseFloat(jobFormData.budget) * 1000000
+          ).toString();
+
+          await createEscrow(createdJob.jobid, budgetInSmallestUnits);
+
+          console.log('Job and escrow created successfully!');
+        } catch (escrowError) {
+          console.error('Job created but escrow failed:', escrowError);
+          setCreateJobError(
+            'Job created successfully, but escrow creation failed. You may need to create it manually.',
+          );
+          // Don't return here - still want to refresh jobs and close modal
+        }
+
         // Reset form
         setJobFormData({
           name: '',
@@ -700,10 +816,14 @@ const Page = () => {
                               </Button>
                               <Button
                                 onClick={handleCreateJob}
-                                disabled={isCreatingJob}
+                                disabled={isCreatingJob || isCreatingEscrow}
                                 className="flex-1 bg-primary text-white hover:bg-primary/90"
                               >
-                                {isCreatingJob ? 'Creating...' : 'Create Job'}
+                                {isCreatingJob
+                                  ? 'Creating Job...'
+                                  : isCreatingEscrow
+                                    ? 'Creating Escrow...'
+                                    : 'Create Job & Escrow'}
                               </Button>
                             </div>
                           </div>

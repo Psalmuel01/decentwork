@@ -395,9 +395,13 @@ const Page = () => {
 
   // Copy to clipboard function
   const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text).catch((err) => {
-      console.error('Failed to copy: ', err);
-    });
+    if (typeof navigator !== 'undefined' && navigator.clipboard) {
+      navigator.clipboard.writeText(text).catch((err) => {
+        console.error('Failed to copy: ', err);
+      });
+    } else {
+      console.warn('Clipboard API not available');
+    }
   };
 
   // Initialize data

@@ -215,7 +215,7 @@ const Page = () => {
   // State management
   const [clientData, setClientData] = useState<ClientData | null>(null);
   const [jobs, setJobs] = useState<JobData[]>([]);
-  const [selectedJob, setSelectedJob] = useState<JobData | null>(null);
+  // const [selectedJob, setSelectedJob] = useState<JobData | null>(null);
   const [isLoadingJobs, setIsLoadingJobs] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isCreateJobOpen, setIsCreateJobOpen] = useState(false);
@@ -538,10 +538,10 @@ const Page = () => {
     window.scrollTo(0, 0);
   }, []);
 
-  const selectProjectForPayment = (job: JobData) => {
-    setSelectedJob(job);
-    // Add payment modal logic here if needed
-  };
+  // const selectProjectForPayment = (job: JobData) => {
+  //   setSelectedJob(job);
+  //   // Add payment modal logic here if needed
+  // };
 
   if (!isAuthenticated) {
     return (
@@ -840,12 +840,12 @@ const Page = () => {
                     </div>
                   </div>
 
-                  {txError && (
+                  {/*{txError && (
                     <div className="mt-4 p-4 bg-red-100 rounded-md mb-4">
                       <p className="text-red-800 font-medium">Error occurred</p>
                       <p className="text-sm">{txError}</p>
                     </div>
-                  )}
+                  )}*/}
 
                   <div className="container mx-auto px-4 py-8">
                     <div className="grid grid-cols-1 gap-x-3">

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Loader2, LucideMoveLeft } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { createDataItemSigner, message } from '@permaweb/aoconnect';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -28,6 +29,36 @@ import { AllProposals } from '@/components/AllProposals';
 
 // API Configuration
 const API_URL = 'https://decentwork.onrender.com/graphql';
+
+// Escrow Configuration
+const ESCROW_PROCESS_ID = 'ktl0iPdM44_VfTAVF557vSqaF9AfUAFUKDDaQRWyjf0';
+
+// Wallet utilities
+function detectWallet() {
+  return window.arweaveWallet || null;
+}
+
+function createWalletSigner() {
+  const walletApi = detectWallet();
+  if (!walletApi) throw new Error('Connect wallet first');
+  return createDataItemSigner(walletApi);
+}
+
+async function sendMessage(
+  processId: string,
+  tags: Array<{ name: string; value: string }>,
+  data?: string,
+) {
+  const signer = createWalletSigner();
+  try {
+    const res = await message({ process: processId, signer, tags, data });
+    console.log('Sent message id:', res);
+    return res;
+  } catch (error) {
+    console.error('Error sending message:', error);
+    throw error;
+  }
+}
 
 // GraphQL Queries
 const GET_JOBS = `
@@ -203,6 +234,27 @@ const Page = () => {
     }
   };
 
+  // Assign freelancer to escrow (from frontend sample)
+  const assignFreelancerToEscrow = async (
+    jobId: string,
+    freelancerAddress: string,
+  ) => {
+    if (!ESCROW_PROCESS_ID) {
+      throw new Error('Escrow process ID not configured');
+    }
+
+    if (!jobId) throw new Error('Job ID required');
+    if (!freelancerAddress) throw new Error('Freelancer address required');
+
+    console.log('Assigning freelancer to escrow...');
+    await sendMessage(ESCROW_PROCESS_ID, [
+      { name: 'Action', value: 'AssignFreelancer' },
+      { name: 'jobId', value: jobId },
+      { name: 'freelancer', value: freelancerAddress },
+    ]);
+    console.log('Freelancer assigned to escrow successfully');
+  };
+
   // Approve proposal
   const handleApproveProposal = async (
     jobId: string,
@@ -213,10 +265,29 @@ const Page = () => {
       return;
     }
 
+    // Check if wallet is connected for escrow assignment
+    const walletApi = detectWallet();
+    if (!walletApi) {
+      setError('Please connect your wallet to approve proposals');
+      return;
+    }
+
     setIsApproving(true);
     setError(null);
 
     try {
+      console.log('Starting proposal approval process...');
+
+      // Step 1: Assign freelancer to escrow first (from frontend sample)
+      console.log('Assigning freelancer to escrow...');
+      await assignFreelancerToEscrow(jobId, freelancerAddress);
+
+      // Small delay to ensure assignment is processed
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
+      // Step 2: If escrow assignment succeeds, call the GraphQL API
+      console.log('Escrow assignment successful, calling GraphQL API...');
+
       const token = localStorage.getItem('authToken');
       const response = await fetch(API_URL, {
         method: 'POST',
@@ -241,6 +312,7 @@ const Page = () => {
       }
 
       if (result.data?.ApproveProposal?.success) {
+        console.log('Proposal approved successfully via both escrow and API');
         // Close the modal and refresh data
         approveModal.current?.click();
         await fetchJobs();
@@ -251,9 +323,15 @@ const Page = () => {
       }
     } catch (err) {
       console.error('Error approving proposal:', err);
-      setError(
-        err instanceof Error ? err.message : 'An unknown error occurred',
-      );
+      // If escrow assignment fails, we don't proceed to API call
+      if (err.message?.includes('escrow') || err.message?.includes('message')) {
+        console.error('Escrow assignment failed, skipping API call');
+        setError('Failed to assign freelancer to escrow: ' + err.message);
+      } else {
+        setError(
+          err instanceof Error ? err.message : 'An unknown error occurred',
+        );
+      }
     } finally {
       setIsApproving(false);
     }
@@ -784,7 +862,8 @@ const Page = () => {
                 }
               }}
               className="w-1/2 mt-6 bg-[#FB822F] text-white hover:bg-[#FB822F] focus:bg-[#FB822F]"
-              disabled={isRejecting || !selectedProposal}
+              // disabled={isRejecting || !selectedProposal}
+              disabled={true}
             >
               {isRejecting ? (
                 <>

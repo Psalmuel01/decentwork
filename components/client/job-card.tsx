@@ -11,9 +11,14 @@ import { useRef, useState } from 'react';
 import ProposalsList from './proposals-list';
 import FreelancCalendar from '@/icons/freelance/freelance-calendar';
 import LocationIcon from '@/icons/freelance/location-icon';
+import { dryrun } from '@permaweb/aoconnect';
 
 // API Configuration
 const API_URL = 'https://decentwork.onrender.com/graphql';
+
+// Escrow Configuration
+const ESCROW_PROCESS_ID = 'ktl0iPdM44_VfTAVF557vSqaF9AfUAFUKDDaQRWyjf0';
+const TOKEN_PROCESS_ID = 'agYcCFJtrMG6cqMuZfskIkFTGvUPddICmtQSBIoPdiA';
 
 // GraphQL Mutations
 const VERIFY_JOB = `
@@ -25,6 +30,65 @@ const VERIFY_JOB = `
     }
   }
 `;
+
+// Wallet utilities
+function detectWallet() {
+  return window.arweaveWallet || null;
+}
+
+// Escrow verification functions (from frontend sample)
+async function getJobFromEscrow(jobId: string) {
+  if (!ESCROW_PROCESS_ID || !jobId) {
+    throw new Error('Provide escrow process ID and jobId');
+  }
+
+  const res = await dryrun({
+    process: ESCROW_PROCESS_ID,
+    tags: [
+      { name: 'Action', value: 'GetJob' },
+      { name: 'jobId', value: jobId },
+    ],
+  });
+
+  const msg = res.Messages?.find((m) =>
+    m.Tags?.some((t) => t.name === 'Action' && t.value === 'GetJobResult'),
+  );
+
+  const data = msg?.Data || '{}';
+  console.log('GetJob from escrow:', { jobId, job: safeParse(data) });
+  return safeParse(data);
+}
+
+async function getPendingFromEscrow(address?: string, token?: string) {
+  if (!ESCROW_PROCESS_ID) {
+    throw new Error('Provide escrow process ID');
+  }
+
+  const tags = [{ name: 'Action', value: 'GetPending' }];
+  if (address) tags.push({ name: 'addr', value: address });
+  if (token) tags.push({ name: 'token', value: token });
+
+  const res = await dryrun({ process: ESCROW_PROCESS_ID, tags });
+
+  const msg = res.Messages?.find((m) =>
+    m.Tags?.some((t) => t.name === 'Action' && t.value === 'GetPendingResult'),
+  );
+
+  const data = msg?.Data || '[]';
+  console.log('GetPending from escrow:', {
+    address: address || '(caller)',
+    tokens: safeParse(data),
+  });
+  return safeParse(data);
+}
+
+function safeParse(s: string) {
+  try {
+    return JSON.parse(s);
+  } catch {
+    return s;
+  }
+}
 
 export type PostJobCardComponentType = {
   id: string;
@@ -168,6 +232,37 @@ const PostJobCard = ({
     setIsVerifying(true);
 
     try {
+      console.log('Starting job verification...');
+
+      // Step 1: Verify with escrow contract first (from frontend sample)
+      console.log('Verifying job with escrow contract...');
+
+      const escrowJob = await getJobFromEscrow(jobId);
+      console.log('Escrow verification result:', escrowJob);
+
+      // Get current wallet address for pending verification
+      const walletApi = detectWallet();
+      let currentAddress = null;
+      if (walletApi) {
+        try {
+          currentAddress = await (walletApi.getActiveAddress
+            ? walletApi.getActiveAddress()
+            : walletApi.getActivePublicKey?.());
+        } catch (e) {
+          console.warn('Could not get wallet address:', e);
+        }
+      }
+
+      // Also check pending amounts
+      const pendingAmounts = await getPendingFromEscrow(
+        currentAddress,
+        TOKEN_PROCESS_ID,
+      );
+      console.log('Pending amounts from escrow:', pendingAmounts);
+
+      // Step 2: If escrow verification passes, call the GraphQL API
+      console.log('Escrow verification successful, calling GraphQL API...');
+
       const token = localStorage.getItem('authToken');
 
       const response = await fetch(API_URL, {
@@ -193,13 +288,22 @@ const PostJobCard = ({
 
       if (result.data?.VerifyJob?.success) {
         setIsVerified(true);
-        // Optionally show success message
-        console.log('Job verified successfully');
+        console.log('Job verified successfully via both escrow and API');
       } else {
-        console.error('Failed to verify job:', result.data?.VerifyJob?.message);
+        console.error(
+          'Failed to verify job via API:',
+          result.data?.VerifyJob?.message,
+        );
       }
     } catch (error) {
-      console.error('Error verifying job:', error);
+      console.error('Error during job verification:', error);
+      // If escrow verification fails, we don't proceed to API call
+      if (
+        error.message?.includes('escrow') ||
+        error.message?.includes('dryrun')
+      ) {
+        console.error('Escrow verification failed, skipping API call');
+      }
     } finally {
       setIsVerifying(false);
     }

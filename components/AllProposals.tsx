@@ -78,12 +78,23 @@ interface ProposalWithJob extends ProposalData {
   jobName: string;
   jobId: string;
   jobBudget: number;
+  originalJob: JobData; // Add reference to the original job
 }
 
-export function AllProposals({ jobs }: { jobs: JobData[] }) {
+interface AllProposalsProps {
+  jobs: JobData[];
+  onProposalSelect: (job: JobData, proposal: ProposalData) => void;
+}
+
+export function AllProposals({ jobs, onProposalSelect }: AllProposalsProps) {
   const [allProposals, setAllProposals] = useState<ProposalWithJob[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'accepted' | 'declined'>('all');
+  const [statusFilter, setStatusFilter] = useState<
+    'all' | 'pending' | 'accepted' | 'declined'
+  >('all');
+  const [selectedProposalId, setSelectedProposalId] = useState<string | null>(
+    null,
+  );
 
   useEffect(() => {
     const fetchJobsAndProposals = async () => {
@@ -149,6 +160,7 @@ export function AllProposals({ jobs }: { jobs: JobData[] }) {
               jobName: job.name,
               jobId: job.jobid,
               jobBudget: job.budget,
+              originalJob: job, // Store reference to original job
             })),
           )
           .sort(
@@ -166,6 +178,33 @@ export function AllProposals({ jobs }: { jobs: JobData[] }) {
 
     fetchJobsAndProposals();
   }, [jobs]);
+
+  const handleProposalClick = (proposalWithJob: ProposalWithJob) => {
+    console.log('AllProposals: Proposal clicked:', proposalWithJob);
+
+    // Set selected proposal for visual feedback
+    setSelectedProposalId(proposalWithJob.proposalId);
+
+    // Extract the original proposal data without the extra fields
+    const originalProposal: ProposalData = {
+      bidAmount: proposalWithJob.bidAmount,
+      clientWalletAddress: proposalWithJob.clientWalletAddress,
+      coverLetter: proposalWithJob.coverLetter,
+      createdAt: proposalWithJob.createdAt,
+      deliveryTime: proposalWithJob.deliveryTime,
+      freelancerWalletAddress: proposalWithJob.freelancerWalletAddress,
+      proposalId: proposalWithJob.proposalId,
+      status: proposalWithJob.status,
+    };
+
+    // Call the parent callback with the original job and proposal
+    console.log(
+      'AllProposals: Calling onProposalSelect with:',
+      proposalWithJob.originalJob,
+      originalProposal,
+    );
+    onProposalSelect(proposalWithJob.originalJob, originalProposal);
+  };
 
   const formatWalletAddress = (address: string) => {
     if (!address) return 'Unknown';
@@ -186,15 +225,15 @@ export function AllProposals({ jobs }: { jobs: JobData[] }) {
     }
   };
 
-  const filteredProposals = allProposals.filter(proposal =>
-    statusFilter === 'all' || proposal.status === statusFilter
+  const filteredProposals = allProposals.filter(
+    (proposal) => statusFilter === 'all' || proposal.status === statusFilter,
   );
 
   const getProposalStats = () => {
     const total = allProposals.length;
-    const pending = allProposals.filter(p => p.status === 'pending').length;
-    const accepted = allProposals.filter(p => p.status === 'accepted').length;
-    const declined = allProposals.filter(p => p.status === 'declined').length;
+    const pending = allProposals.filter((p) => p.status === 'pending').length;
+    const accepted = allProposals.filter((p) => p.status === 'accepted').length;
+    const declined = allProposals.filter((p) => p.status === 'declined').length;
 
     return { total, pending, accepted, declined };
   };
@@ -213,19 +252,25 @@ export function AllProposals({ jobs }: { jobs: JobData[] }) {
         </Card>
         <Card>
           <CardContent className="p-4">
-            <div className="text-2xl font-bold text-yellow-600">{stats.pending}</div>
+            <div className="text-2xl font-bold text-yellow-600">
+              {stats.pending}
+            </div>
             <p className="text-xs text-muted-foreground">Pending</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4">
-            <div className="text-2xl font-bold text-green-600">{stats.accepted}</div>
+            <div className="text-2xl font-bold text-green-600">
+              {stats.accepted}
+            </div>
             <p className="text-xs text-muted-foreground">Accepted</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4">
-            <div className="text-2xl font-bold text-red-600">{stats.declined}</div>
+            <div className="text-2xl font-bold text-red-600">
+              {stats.declined}
+            </div>
             <p className="text-xs text-muted-foreground">Declined</p>
           </CardContent>
         </Card>
@@ -303,7 +348,12 @@ export function AllProposals({ jobs }: { jobs: JobData[] }) {
                   filteredProposals.map((proposal, index) => (
                     <Table.Row
                       key={`${proposal.proposalId}-${index}`}
-                      className="h-16 leading-[64px]"
+                      className={`h-16 leading-[64px] cursor-pointer hover:bg-gray-50 transition-colors ${
+                        selectedProposalId === proposal.proposalId
+                          ? 'bg-blue-50 border-l-4 border-blue-500'
+                          : ''
+                      }`}
+                      onClick={() => handleProposalClick(proposal)}
                     >
                       <Table.RowHeaderCell>
                         <Flex align="center" gap="3" className="h-full">
@@ -316,16 +366,23 @@ export function AllProposals({ jobs }: { jobs: JobData[] }) {
                           />
                           <Flex align="start" direction="column" gap="1">
                             <Text size="2" weight="medium">
-                              {formatWalletAddress(proposal.freelancerWalletAddress)}
+                              {formatWalletAddress(
+                                proposal.freelancerWalletAddress,
+                              )}
                             </Text>
                             <Text color="gray" size="1">
-                              {new Date(proposal.createdAt).toLocaleDateString()}
+                              {new Date(
+                                proposal.createdAt,
+                              ).toLocaleDateString()}
                             </Text>
                           </Flex>
                         </Flex>
                       </Table.RowHeaderCell>
                       <Table.Cell align="center">
-                        <Text className="truncate max-w-32" title={proposal.jobName}>
+                        <Text
+                          className="truncate max-w-32"
+                          title={proposal.jobName}
+                        >
                           {proposal.jobName}
                         </Text>
                       </Table.Cell>
@@ -338,9 +395,7 @@ export function AllProposals({ jobs }: { jobs: JobData[] }) {
                         </Badge>
                       </Table.Cell>
                       <Table.Cell align="center">
-                        <Text size="2">
-                          {proposal.deliveryTime} days
-                        </Text>
+                        <Text size="2">{proposal.deliveryTime} days</Text>
                       </Table.Cell>
                       <Table.Cell align="right">
                         <Text weight="medium" size="2">
@@ -356,11 +411,13 @@ export function AllProposals({ jobs }: { jobs: JobData[] }) {
                   ))
                 ) : (
                   <Table.Row className="h-16 leading-[64px]">
-                    <Table.Cell colSpan={6} className="text-center text-gray-500">
+                    <Table.Cell
+                      colSpan={6}
+                      className="text-center text-gray-500"
+                    >
                       {statusFilter === 'all'
                         ? 'No proposals found'
-                        : `No ${statusFilter} proposals found`
-                      }
+                        : `No ${statusFilter} proposals found`}
                     </Table.Cell>
                   </Table.Row>
                 )}

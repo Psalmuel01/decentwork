@@ -66,11 +66,22 @@ const GET_JOBS = `
     }
   }`;
 
-const ACCEPT_PROPOSAL = `
-  mutation AcceptProposal($jobId: Int!, $freelancerAddress: String!) {
-    acceptProposal(jobId: $jobId, freelancerAddress: $freelancerAddress) {
-      success
+const APPROVE_PROPOSAL = `
+  mutation ApproveProposal($freelancerWalletAddress: String!, $jobid: ID!) {
+    ApproveProposal(freelancerWalletAddress: $freelancerWalletAddress, jobid: $jobid) {
+      Proposals {
+        bidAmount
+        clientWalletAddress
+        coverLetter
+        createdAt
+        deliveryTime
+        freelancerWalletAddress
+        proposalId
+        status
+      }
+      code
       message
+      success
     }
   }`;
 
@@ -114,14 +125,14 @@ export interface JobData {
 
 const Page = () => {
   const router = useRouter();
-  const hireModal = useRef<HTMLDivElement>(null);
+  const approveModal = useRef<HTMLDivElement>(null);
   const rejectModal = useRef<HTMLDivElement>(null);
 
   // State management
   const [jobs, setJobs] = useState<JobData[]>([]);
   const [isLoadingJobs, setIsLoadingJobs] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [isHiring, setIsHiring] = useState(false);
+  const [isApproving, setIsApproving] = useState(false);
   const [isRejecting, setIsRejecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [totalProposals, setTotalProposals] = useState(0);
@@ -192,17 +203,17 @@ const Page = () => {
     }
   };
 
-  // Accept proposal
-  const handleHireFreelancer = async (
+  // Approve proposal
+  const handleApproveProposal = async (
     jobId: string,
     freelancerAddress: string,
   ) => {
     if (!isAuthenticated) {
-      setError('Please log in to hire this freelancer');
+      setError('Please log in to approve this proposal');
       return;
     }
 
-    setIsHiring(true);
+    setIsApproving(true);
     setError(null);
 
     try {
@@ -214,10 +225,10 @@ const Page = () => {
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          query: ACCEPT_PROPOSAL,
+          query: APPROVE_PROPOSAL,
           variables: {
-            jobId: parseInt(jobId),
-            freelancerAddress: freelancerAddress,
+            freelancerWalletAddress: freelancerAddress,
+            jobid: jobId,
           },
         }),
       });
@@ -225,26 +236,26 @@ const Page = () => {
       const result = await response.json();
       if (result.errors) {
         throw new Error(
-          result.errors[0]?.message || 'Failed to hire freelancer',
+          result.errors[0]?.message || 'Failed to approve proposal',
         );
       }
 
-      if (result.data?.acceptProposal?.success) {
+      if (result.data?.ApproveProposal?.success) {
         // Close the modal and refresh data
-        hireModal.current?.click();
+        approveModal.current?.click();
         await fetchJobs();
       } else {
         throw new Error(
-          result.data?.acceptProposal?.message || 'Failed to hire freelancer',
+          result.data?.ApproveProposal?.message || 'Failed to approve proposal',
         );
       }
     } catch (err) {
-      console.error('Error hiring freelancer:', err);
+      console.error('Error approving proposal:', err);
       setError(
         err instanceof Error ? err.message : 'An unknown error occurred',
       );
     } finally {
-      setIsHiring(false);
+      setIsApproving(false);
     }
   };
 
@@ -398,16 +409,6 @@ const Page = () => {
                   Below are the contact details of the freelancer who has
                   submitted a proposal for your project role.
                 </p>
-                {selectedProposal && (
-                  <div className="mt-2 p-2 bg-blue-50 text-blue-800 text-sm rounded">
-                    Debug: Selected proposal from {selectedProposal.job.name} by{' '}
-                    {selectedProposal.proposal.freelancerWalletAddress.substring(
-                      0,
-                      8,
-                    )}
-                    ...
-                  </div>
-                )}
 
                 {selectedProposal ? (
                   <div className="mt-12 font-circular">
@@ -544,7 +545,7 @@ const Page = () => {
                             )}
                             ...
                             {selectedProposal.proposal.freelancerWalletAddress.substring(
-                              -4,
+                              20,
                             )}
                           </p>
                           <div className="flex items-center space-x-4">
@@ -609,12 +610,12 @@ const Page = () => {
                         <>
                           <Button
                             onClick={() => {
-                              hireModal.current?.click();
+                              approveModal.current?.click();
                             }}
                             className="text-white w-full"
-                            disabled={isHiring}
+                            disabled={isApproving}
                           >
-                            {isHiring ? 'Processing...' : 'Hire freelancer'}
+                            {isApproving ? 'Processing...' : 'Approve Proposal'}
                           </Button>
                           <Button
                             onClick={() => {
@@ -659,20 +660,20 @@ const Page = () => {
         </div>
       </main>
 
-      {/* Hire Modal */}
+      {/* Approve Proposal Modal */}
       <Dialog>
         <DialogTrigger asChild>
-          <div ref={hireModal} className="hidden">
-            Hire Freelancer
+          <div ref={approveModal} className="hidden">
+            Approve Proposal
           </div>
         </DialogTrigger>
 
         <DialogContent className="sm:max-w-[425px] bg-white">
           <div className="flex flex-col items-center">
             <p className="text-[20px] mb-6 font-poppins font-semibold text-[#18181B] mt-5">
-              Hire{' '}
+              Approve Proposal from{' '}
               {selectedProposal
-                ? `${selectedProposal.proposal.freelancerWalletAddress.substring(0, 6)}...${selectedProposal.proposal.freelancerWalletAddress.substring(-4)}`
+                ? `${selectedProposal.proposal.freelancerWalletAddress.substring(0, 6)}...${selectedProposal.proposal.freelancerWalletAddress.substring(20)}`
                 : 'Freelancer'}
             </p>
 
@@ -687,8 +688,8 @@ const Page = () => {
 
             <div className="flex justify-center">
               <span className="text-[#7E8082] font-normal font-circular text-sm text-center mt-5">
-                You&apos;re about to hire this freelancer. Once confirmed,
-                they&apos;ll be notified and granted project access.
+                You&apos;re about to approve this proposal. Once confirmed, the
+                freelancer will be notified and granted project access.
               </span>
             </div>
 
@@ -708,22 +709,22 @@ const Page = () => {
             <Button
               onClick={() => {
                 if (selectedProposal) {
-                  handleHireFreelancer(
+                  handleApproveProposal(
                     selectedProposal.job.jobid,
                     selectedProposal.proposal.freelancerWalletAddress,
                   );
                 }
               }}
               className="w-1/2 mt-6 bg-primary text-white"
-              disabled={isHiring || !selectedProposal}
+              disabled={isApproving || !selectedProposal}
             >
-              {isHiring ? (
+              {isApproving ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Processing...
                 </>
               ) : (
-                'Confirm hire'
+                'Approve Proposal'
               )}
             </Button>
           </div>

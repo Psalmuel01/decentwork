@@ -13,7 +13,6 @@ import { Flex, Grid } from '@radix-ui/themes';
 import DashboardCards from '@/components/DashboardCards';
 import { ProposalEngagementChart } from '@/components/ProposalEngagementChart';
 import { ActiveProjectsTable } from '@/components/ActiveProjectsTable';
-import { ExpertCardType } from '@/types';
 import WalletIcon from '@/icons/wallet';
 import ProjectIcon from '@/icons/navbar/ProjectIcon';
 import ProposalIcon from '@/icons/navbar/ProposalIcon';
@@ -274,42 +273,15 @@ interface FreelancerData {
 const Page = () => {
   const router = useRouter();
   // const editJob = useRef<HTMLDivElement>(null);
-  const { hasJob, isNewClientUser } = useAuth();
-  const confirmPayment = useRef<HTMLDivElement>(null);
-  const closeConfirmPayment = useRef<HTMLDivElement>(null);
-  const terminateContractModal = useRef<HTMLDivElement>(null);
-  const paymentSuccessModal = useRef<HTMLDivElement>(null);
+  const { isNewClientUser } = useAuth();
 
   // State management
   const [clientData, setClientData] = useState<ClientData | null>(null);
-  // const [projects, setProjects] = useState<ProjectData[]>([]);
   const [jobs, setJobs] = useState<JobData[]>([]);
-  const [freelancers, setFreelancers] = useState<FreelancerData[]>([]);
-  // const [selectedProject, setSelectedProject] = useState<ProjectData | null>(
-  //   null,
-  // );
-  const [selectedJob, setSelectedJob] = useState<JobData | null>(null);
-  // const [isLoadingProjects, setIsLoadingProjects] = useState(false);
-  const [isLoadingJobs, setIsLoadingJobs] = useState(false);
-  const [isLoadingFreelancers, setIsLoadingFreelancers] = useState(false);
-  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
-  const [txError, setTxError] = useState<string | null>(null);
-  const [paymentAmount, setPaymentAmount] = useState<string>('0');
+  const [, setFreelancers] = useState<FreelancerData[]>([]);
+  const [, setIsLoadingJobs] = useState(false);
+  const [, setIsLoadingFreelancers] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-
-  // Create Job Modal State
-  const [isCreateJobOpen, setIsCreateJobOpen] = useState(false);
-  const [isCreatingJob, setIsCreatingJob] = useState(false);
-  const [createJobError, setCreateJobError] = useState<string | null>(null);
-  const [jobFormData, setJobFormData] = useState({
-    name: '',
-    description: '',
-    budget: '',
-    duration: '',
-    category: '',
-    skills: [] as string[],
-  });
-  const [skillInput, setSkillInput] = useState('');
 
   // Check authentication
   useEffect(() => {
@@ -505,188 +477,75 @@ const Page = () => {
     ];
   };
 
-  const selectProjectForPayment = (job: JobData) => {
-    setSelectedJob(job);
-    if (job.budget) {
-      setPaymentAmount(job.budget.toString());
-    }
-    if (confirmPayment.current) {
-      confirmPayment.current.click();
-    }
-  };
+  // const selectProjectForPayment = (job: JobData) => {
+  //   setSelectedJob(job);
+  //   if (job.budget) {
+  //     setPaymentAmount(job.budget.toString());
+  //   }
+  //   if (confirmPayment.current) {
+  //     confirmPayment.current.click();
+  //   }
+  // };
 
-  const handleSendPayment = async () => {
-    if (!selectedJob || !isAuthenticated) {
-      setTxError('Please log in and select a job first');
-      return;
-    }
+  // const handleSendPayment = async () => {
+  //   if (!selectedJob || !isAuthenticated) {
+  //     setTxError('Please log in and select a job first');
+  //     return;
+  //   }
 
-    setIsProcessingPayment(true);
-    setTxError(null);
+  //   setIsProcessingPayment(true);
+  //   setTxError(null);
 
-    try {
-      // Here you would implement the actual payment logic
-      // For now, we'll simulate a successful payment
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+  //   try {
+  //     // Here you would implement the actual payment logic
+  //     // For now, we'll simulate a successful payment
+  //     await new Promise((resolve) => setTimeout(resolve, 2000));
 
-      if (closeConfirmPayment.current) {
-        closeConfirmPayment.current.click();
-      }
+  //     if (closeConfirmPayment.current) {
+  //       closeConfirmPayment.current.click();
+  //     }
 
-      if (paymentSuccessModal.current) {
-        paymentSuccessModal.current.click();
-      }
+  //     if (paymentSuccessModal.current) {
+  //       paymentSuccessModal.current.click();
+  //     }
 
-      // Refresh projects data
-      await fetchJobs();
-    } catch (err) {
-      console.error('Error sending payment:', err);
-      setTxError(
-        err instanceof Error ? err.message : 'Failed to process payment',
-      );
-    } finally {
-      setIsProcessingPayment(false);
-    }
-  };
+  //     // Refresh projects data
+  //     await fetchJobs();
+  //   } catch (err) {
+  //     console.error('Error sending payment:', err);
+  //     setTxError(
+  //       err instanceof Error ? err.message : 'Failed to process payment',
+  //     );
+  //   } finally {
+  //     setIsProcessingPayment(false);
+  //   }
+  // };
 
-  const handleTerminateContract = async () => {
-    if (!selectedJob || !isAuthenticated) {
-      setTxError('Please log in and select a job first');
-      return;
-    }
+  // const handleTerminateContract = async () => {
+  //   if (!selectedJob || !isAuthenticated) {
+  //     setTxError('Please log in and select a job first');
+  //     return;
+  //   }
 
-    setIsProcessingPayment(true);
-    setTxError(null);
+  //   setIsProcessingPayment(true);
+  //   setTxError(null);
 
-    try {
-      // Here you would implement the actual contract termination logic
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+  //   try {
+  //     // Here you would implement the actual contract termination logic
+  //     await new Promise((resolve) => setTimeout(resolve, 1500));
 
-      // Refresh projects data
-      // await fetchProjects();
-      await fetchJobs();
-    } catch (err) {
-      console.error('Error terminating contract:', err);
-      setTxError(
-        err instanceof Error ? err.message : 'Failed to terminate contract',
-      );
-    } finally {
-      setIsProcessingPayment(false);
-    }
-  };
-
-  const handleLogout = () => {
-    localStorage.removeItem('authToken');
-    setIsAuthenticated(false);
-    setClientData(null);
-    setJobs([]);
-    setFreelancers([]);
-    router.push(ApplicationRoutes.HOME);
-  };
-
-  const handleCreateJob = async () => {
-    if (!isAuthenticated) {
-      setCreateJobError('Please log in to create a job');
-      return;
-    }
-
-    if (
-      !jobFormData.name ||
-      !jobFormData.description ||
-      !jobFormData.budget ||
-      !jobFormData.duration ||
-      !jobFormData.category ||
-      jobFormData.skills.length === 0
-    ) {
-      setCreateJobError('Please fill in all required fields');
-      return;
-    }
-
-    setIsCreatingJob(true);
-    setCreateJobError(null);
-
-    try {
-      const token = localStorage.getItem('authToken');
-      const skillsArray = jobFormData.skills;
-
-      const response = await fetch(API_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          query: CREATE_JOB,
-          variables: {
-            name: jobFormData.name,
-            description: jobFormData.description,
-            budget: parseFloat(jobFormData.budget),
-            duration: jobFormData.duration,
-            category: jobFormData.category,
-            skills: skillsArray,
-          },
-        }),
-      });
-
-      console.log(jobFormData);
-      const result = await response.json();
-      console.log(result);
-
-      if (result.errors) {
-        console.error('GraphQL errors:', result.errors);
-        setCreateJobError(result.errors[0]?.message || 'Failed to create job');
-        return;
-      }
-
-      if (result.data?.createJob) {
-        // Reset form
-        setJobFormData({
-          name: '',
-          description: '',
-          budget: '',
-          duration: '',
-          category: '',
-          skills: [],
-        });
-        setSkillInput('');
-
-        // Close modal
-        setIsCreateJobOpen(false);
-
-        // Refresh jobs
-        await fetchJobs();
-      } else {
-        setCreateJobError('Failed to create job');
-      }
-    } catch (error) {
-      console.error('Error creating job:', error);
-      setCreateJobError(
-        error instanceof Error ? error.message : 'Failed to create job',
-      );
-    } finally {
-      setIsCreatingJob(false);
-    }
-  };
-
-  const handleJobFormChange = (field: string, value: string | string[]) => {
-    setJobFormData((prev) => ({ ...prev, [field]: value }));
-    if (createJobError) setCreateJobError(null);
-  };
-
-  const addSkill = () => {
-    const skill = skillInput.trim();
-    if (skill && !jobFormData.skills.includes(skill)) {
-      handleJobFormChange('skills', [...jobFormData.skills, skill]);
-      setSkillInput('');
-    }
-  };
-
-  const removeSkill = (skillToRemove: string) => {
-    handleJobFormChange(
-      'skills',
-      jobFormData.skills.filter((skill) => skill !== skillToRemove),
-    );
-  };
+  //     // Refresh projects data
+  //     // await fetchProjects();
+  //     await fetchJobs();
+  //   } catch (err) {
+  //     console.error('Error terminating contract:', err);
+  //     setTxError(
+  //       err instanceof Error ? err.message : 'Failed to terminate contract',
+  //     );
+  //   } finally {
+  //     setIsProcessingPayment(false);
+  //   }
+  // };
 
   if (!isAuthenticated) {
     return (
@@ -751,7 +610,7 @@ const Page = () => {
       </PageContainer>
 
       {/* Payment Modal */}
-      <Dialog>
+      {/*<Dialog>
         <DialogTrigger asChild>
           <div ref={confirmPayment} className="hidden">
             Confirm Payment
@@ -814,10 +673,10 @@ const Page = () => {
             Close
           </div>
         </DialogClose>
-      </Dialog>
+      </Dialog>*/}
 
       {/* Terminate Contract Modal */}
-      <Dialog>
+      {/*<Dialog>
         <DialogTrigger asChild>
           <div ref={terminateContractModal} className="hidden">
             Terminate Contract
@@ -862,10 +721,10 @@ const Page = () => {
             </Button>
           </div>
         </DialogContent>
-      </Dialog>
+      </Dialog>*/}
 
       {/* Payment Success Modal */}
-      <Dialog>
+      {/*<Dialog>
         <DialogTrigger asChild>
           <div ref={paymentSuccessModal} className="hidden">
             Payment Success
@@ -895,7 +754,7 @@ const Page = () => {
             </DialogClose>
           </div>
         </DialogContent>
-      </Dialog>
+      </Dialog>*/}
     </>
   );
 };

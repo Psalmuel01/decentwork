@@ -115,7 +115,7 @@ export default function Home() {
                 width={'100'}
                 height={'100'}
                 className="w-full h-auto"
-                src="/images/home/about-work.png"
+                src="/images/home/about-work.jpg"
               />
             </div>
           </div>
@@ -138,8 +138,8 @@ export default function Home() {
               alt={''}
               width={'100'}
               height={'100'}
-              className="w-full lg:w-2/5"
-              src="/images/home/p-service1.png"
+              className="w-full lg:w-2/5 object-contain"
+              src="/images/home/p-service.jpg"
             />
             <Image
               alt={''}

@@ -286,7 +286,7 @@ export default function Navbar() {
       align="center"
       justify="between"
     >
-      <Link href={'/'} className="text-blue-400 font-bold text-2xl">
+      <Link href={'/'} className="text-[#2c7fff] font-bold text-2xl">
         DecentWork
       </Link>
 

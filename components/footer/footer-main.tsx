@@ -6,10 +6,10 @@ const FooterMain = () => {
   return (
     <>
       <div className="bg-muted app-container">
-        <div className="grid grid-cols-1 md:grid-cols-3 py-10 justify-between border-b border-gray-300">
+        <div className="grid grid-cols-1 md:grid-cols-2 py-10 justify-between border-b border-gray-300">
           <FooterStart />
 
-          <FooterCenter />
+          {/*<FooterCenter />*/}
 
           <FooterEnd />
         </div>

@@ -24,7 +24,15 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 //   success: boolean;
 // }
 
-export function UserTypeModal() {
+interface UserTypeModalProps {
+  shouldOpen?: boolean;
+  onModalStateChange?: (open: boolean) => void;
+}
+
+export function UserTypeModal({
+  shouldOpen = false,
+  onModalStateChange,
+}: UserTypeModalProps) {
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const [userType, setUserType] = useState<'freelancer' | 'client'>(
@@ -32,63 +40,75 @@ export function UserTypeModal() {
   );
   const [isCheckingRole, setIsCheckingRole] = useState(false);
 
-  const checkExistingRole = async () => {
-    try {
-      setIsCheckingRole(true);
-      const token = localStorage.getItem('authToken');
+  useEffect(() => {
+    const checkExistingRole = async () => {
+      try {
+        setIsCheckingRole(true);
+        const token = localStorage.getItem('authToken');
 
-      if (!token) {
-        return;
-      }
-
-      const response = await fetch('https://decentwork.onrender.com/graphql', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          query: `
-            query GetRole {
-              getRole {
-                code
-                message
-                role
-                success
-              }
-            }
-          `,
-        }),
-      });
-
-      const result = await response.json();
-
-      if (result.data?.getRole?.success && result.data.getRole.role) {
-        const role = result.data.getRole.role;
-
-        // Automatically redirect based on existing role
-        if (role === 'Client') {
-          router.push(ApplicationRoutes.CLIENT_DASHBOARD);
-        } else if (role === 'Freelancer') {
-          router.push(ApplicationRoutes.FREELANCER_DASHBOARD);
+        if (!token) {
+          return;
         }
 
-        setIsOpen(false);
-      }
-      // If no role exists, modal will remain open for user selection
-    } catch (error) {
-      console.error('Error checking existing role:', error);
-      // If error occurs, let user select role manually
-    } finally {
-      setIsCheckingRole(false);
-    }
-  };
+        const response = await fetch(
+          'https://decentwork.onrender.com/graphql',
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              query: `
+              query GetRole {
+                getRole {
+                  code
+                  message
+                  role
+                  success
+                }
+              }
+            `,
+            }),
+          },
+        );
 
-  useEffect(() => {
+        const result = await response.json();
+
+        if (result.data?.getRole?.success && result.data.getRole.role) {
+          const role = result.data.getRole.role;
+
+          // Automatically redirect based on existing role
+          if (role === 'Client') {
+            router.push(ApplicationRoutes.CLIENT_DASHBOARD);
+          } else if (role === 'Freelancer') {
+            router.push(ApplicationRoutes.FREELANCER_DASHBOARD);
+          }
+
+          setIsOpen(false);
+          onModalStateChange?.(false);
+        }
+        // If no role exists, modal will remain open for user selection
+      } catch (error) {
+        console.error('Error checking existing role:', error);
+        // If error occurs, let user select role manually
+      } finally {
+        setIsCheckingRole(false);
+      }
+    };
+
     if (isOpen) {
       checkExistingRole();
     }
-  }, [isOpen]);
+  }, [isOpen, router, onModalStateChange]);
+
+  // Auto-open modal when shouldOpen prop is true
+  useEffect(() => {
+    if (shouldOpen && !isOpen) {
+      setIsOpen(true);
+      onModalStateChange?.(true);
+    }
+  }, [shouldOpen, isOpen, onModalStateChange]);
 
   const handleJoin = () => {
     // eslint-disable-next-line @typescript-eslint/no-unused-expressions
@@ -96,12 +116,24 @@ export function UserTypeModal() {
       ? router.push(ApplicationRoutes.CLIENT_DASHBOARD)
       : router.push(ApplicationRoutes.FREELANCER_DASHBOARD);
     setIsOpen(false);
+    onModalStateChange?.(false);
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+    <Dialog
+      open={isOpen}
+      onOpenChange={(open) => {
+        setIsOpen(open);
+        onModalStateChange?.(open);
+      }}
+    >
       <DialogTrigger asChild>
-        <Button variant={'default'}>Go to Dashboard</Button>
+        <Button
+          variant={'secondary'}
+          className={shouldOpen ? 'hidden' : 'text-blue-500'}
+        >
+          Redirecting
+        </Button>
       </DialogTrigger>
 
       <DialogContent className="sm:max-w-[425px]">
@@ -200,9 +232,7 @@ export function UserTypeModal() {
 
             <div className="">
               <Button
-                onClick={() => {
-                  handleJoin();
-                }}
+                onClick={handleJoin}
                 className="bg-primary text-white w-full mt-6 py-6"
               >
                 Join as a {userType === 'freelancer' ? 'Freelancer' : 'Client'}

@@ -53,6 +53,7 @@ export default function Navbar() {
   const [tabValue, setTabValue] = useState<string>('');
   const [isAuthenticating, setIsAuthenticating] = useState(false);
   const [isWalletConnected, setIsWalletConnected] = useState(false);
+  const [shouldOpenModal, setShouldOpenModal] = useState(false);
 
   const isClientDashboardRoute = pathname.endsWith(
     ApplicationRoutes.CLIENT_DASHBOARD,
@@ -237,6 +238,7 @@ export default function Navbar() {
         }
 
         setIsWalletConnected(true);
+        setShouldOpenModal(true);
         console.log('Authentication successful:', authResponse.user);
       } else {
         throw new Error(authResponse.error || 'Authentication failed');
@@ -255,7 +257,10 @@ export default function Navbar() {
     if (typeof window !== 'undefined') {
       const token = localStorage.getItem('authToken');
       const userData = localStorage.getItem('userData');
-      if (token && userData) setIsWalletConnected(true);
+      if (token && userData) {
+        setIsWalletConnected(true);
+        // Don't auto-open modal on page refresh/reload
+      }
     }
   }, []);
 
@@ -267,6 +272,7 @@ export default function Navbar() {
     }
     setIsWalletConnected(false);
     setAuthError(null);
+    setShouldOpenModal(false);
   };
 
   return (
@@ -284,11 +290,11 @@ export default function Navbar() {
         DecentWork
       </Link>
 
-      <div className="hidden md:flex items-center gap-12">
+      {/*<div className="hidden md:flex items-center gap-12">
         <Link href={ApplicationRoutes.ABOUT}>About</Link>
         <Link href={ApplicationRoutes.SERVICES}>Services</Link>
         <Link href={ApplicationRoutes.HOW_IT_WORKS}>How it works</Link>
-      </div>
+      </div>*/}
 
       <Flex align="center" gap="5">
         {authError && (
@@ -305,7 +311,10 @@ export default function Navbar() {
           </Button>
         ) : (
           <Flex align="center" gap="3">
-            <UserTypeModal />
+            <UserTypeModal
+              shouldOpen={shouldOpenModal}
+              onModalStateChange={setShouldOpenModal}
+            />
             <Button
               onClick={handleLogout}
               variant="outline"

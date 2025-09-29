@@ -132,7 +132,7 @@ export function UserTypeModal({
           variant={'secondary'}
           className={shouldOpen ? 'hidden' : 'text-blue-500'}
         >
-          Redirecting
+          Dashboard
         </Button>
       </DialogTrigger>
 

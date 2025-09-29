@@ -500,22 +500,22 @@ export default function Page() {
           `
         : `
             mutation CreateFreelancer(
-              $address: String!,
-              $bio: String!,
-              $category: Category!,
-              $city: String!,
-              $country: String!,
-              $dateOfBirth: String!,
-              $email: String!,
-              $fluency: String!,
-              $hourlyRate: Float!,
-              $language: String!,
-              $name: String!,
-              $phoneNumber: String!,
-              $postalCode: String!,
-              $skills: [String!]!,
-              $speciality: String!,
-              $title: String!,
+              $address: String,
+              $bio: String,
+              $category: Category,
+              $city: String,
+              $country: String,
+              $dateOfBirth: String,
+              $email: String,
+              $fluency: String,
+              $hourlyRate: Float,
+              $language: String,
+              $name: String,
+              $phoneNumber: String,
+              $postalCode: String,
+              $skills: [String!],
+              $speciality: String,
+              $title: String,
               $imageUrl: String
             ) {
               createFreelancer(
@@ -829,7 +829,7 @@ export default function Page() {
                         />
                       </Flex>
 
-                      <Flex className={'w-full'}>
+                      {/*<Flex className={'w-full'}>
                         <FormField
                           control={control}
                           name="phone"
@@ -843,9 +843,9 @@ export default function Page() {
                             </FormItem>
                           )}
                         />
-                      </Flex>
+                      </Flex>*/}
 
-                      <Flex className={'w-full'}>
+                      {/*<Flex className={'w-full'}>
                         <FormField
                           control={control}
                           name="date_of_birth"
@@ -899,7 +899,7 @@ export default function Page() {
                             </FormItem>
                           )}
                         />
-                      </Flex>
+                      </Flex>*/}
 
                       <Flex className={'w-full'}>
                         <FormField
@@ -942,7 +942,7 @@ export default function Page() {
                         />
                       </Flex>
 
-                      <Flex
+                      {/*<Flex
                         className={'w-full flex-col lg:flex-row'}
                         align={'center'}
                         justify={'between'}
@@ -1025,9 +1025,9 @@ export default function Page() {
                             )}
                           />
                         </Flex>
-                      </Flex>
+                      </Flex>*/}
 
-                      <Flex
+                      {/*<Flex
                         className={'w-full flex-col lg:flex-row'}
                         align={'center'}
                         justify={'between'}
@@ -1040,7 +1040,7 @@ export default function Page() {
                             render={({ field }) => (
                               <FormItem className={'w-full'}>
                                 <FormLabel className="">
-                                  Street address*
+                                  Street address
                                 </FormLabel>
 
                                 <FormControl>
@@ -1083,7 +1083,7 @@ export default function Page() {
                             )}
                           />
                         </Flex>
-                      </Flex>
+                      </Flex>*/}
 
                       <Flex className={'w-full'}>
                         <FormField
@@ -1134,7 +1134,7 @@ export default function Page() {
                         />
                       </Flex>
 
-                      <Flex className={'w-full'}>
+                      {/*<Flex className={'w-full'}>
                         <FormField
                           control={control}
                           name="speciality"
@@ -1152,7 +1152,7 @@ export default function Page() {
                             </FormItem>
                           )}
                         />
-                      </Flex>
+                      </Flex>*/}
 
                       <Flex className={'w-full'}>
                         <FormField

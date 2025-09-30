@@ -1,4 +1,3 @@
-import FooterCenter from './footer-center';
 import FooterEnd from './footer-end';
 import FooterStart from './footer-start';
 

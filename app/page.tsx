@@ -204,7 +204,7 @@ export default function Home() {
                   Join our community of top freelancers and clients today
                 </p>
 
-                <div className="font-medium font-circular mt-8 flex flex-col lg:flex-row gap-y-[10px] gap-x-7 lg:w-max max-w-[400px] lg:max-w-max w-full">
+                {/*<div className="font-medium font-circular mt-8 flex flex-col lg:flex-row gap-y-[10px] gap-x-7 lg:w-max max-w-[400px] lg:max-w-max w-full">
                   <Button className="bg-transparent border border-white rounded-md text-white px-8">
                     <Link href={ApplicationRoutes.JOIN}>Post a Project</Link>
                   </Button>
@@ -213,7 +213,7 @@ export default function Home() {
                       Become a Freelancer
                     </Link>
                   </Button>
-                </div>
+                </div>*/}
               </div>
             </div>
           </div>
